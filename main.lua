@@ -26,11 +26,11 @@ level_floors = {{0,0,0,0,0,0,0},
 				{0,0,0,0,0,0,0}}
 			
 level_ceilings = {{0,0,0,0,0,0,0},
-				{0,1,1,1,1,1,0},
-				{0,1,1,1,1,1,0},
-				{0,1,1,1,1,1,0},
-				{0,1,1,1,1,1,0},
-				{0,1,1,1,1,1,0},
+				{0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0},
 				{0,0,0,0,0,0,0} }
 			
 
@@ -39,27 +39,32 @@ level_y = 7
 wall_height = 30
 cell_size = 32
 
-quality = 8 -- Calculates how wide each segment of the screen would be for the rays
-field_of_view = 60 -- The amount of area the player can see
+quality = 4 -- Calculates how wide each segment of the screen would be for the rays
+field_of_view = 75 -- The amount of area the player can see
+
+pi = math.pi
 
 -- Player properties
 player_x = 40
 player_y = 40
 player_delta_x = 0
 player_delta_y = 0
-player_angle = 2 * math.pi
+player_angle = 2 * pi
 player_speed = 1
 map_toggle = false
 
 -- Render settings
-render_width = 640
-render_height = 400
+render_width = 320
+render_height = 200
+render_center_width = render_width / 2
+render_center_height = render_height / 2
 
 -- Misc stuff
 debug_number = 0
 fps = 0
 
 textures_image = love.image.newImageData("graphics/platform.png")
+sky_image = love.image.newImageData("graphics/sky.png")
 
 function drawMap()
 	local point_x, point_y, point_x_offset, point_y_offset, depth_of_field
@@ -71,16 +76,7 @@ function drawMap()
 	
 	-- Uses the player angle with the ray count and field of view
 	-- to calculate the direction a single ray points to
-	local ray_angle = player_angle - (((math.pi / 180) * (field_of_view / ray_count)) * starting_degree_offset)
-	
-	-- Failsafe stuff
-	if ray_angle < 0 then
-		ray_angle = ray_angle + (2*math.pi)
-	end
-	
-	if ray_angle > 2*math.pi then
-		ray_angle = ray_angle - (2*math.pi)
-	end
+	local ray_angle = fixRadians(player_angle - (((pi / 180) * (field_of_view / ray_count)) * starting_degree_offset))
 	
 	-- Ray initialization + 3d Drawing
 	for rays = 0, ray_count do 
@@ -98,31 +94,31 @@ function drawMap()
 		local horizontal_point_x = 0
 		local horizontal_point_y = 0
 		
-		if ray_angle > math.pi then
+		if ray_angle > pi then
 			-- Calculates the horizontal line above the player needed to check the intersection
 			pointed_horizontal_line = (math.floor(player_y / cell_size) * cell_size)
 			
 			-- Finds the point of intersection of the horizontal line and the player ray
 			point_y = player_y - (player_y - pointed_horizontal_line)
-			point_x = (player_y - pointed_horizontal_line) * math.tan(ray_angle - (math.pi/2)) + player_x
+			point_x = (player_y - pointed_horizontal_line) * math.tan(ray_angle - (pi/2)) + player_x
 			
 			-- Finds the point of intersection of the next horizontal line and the player ray
 			point_y_offset = -cell_size
-			point_x_offset = -point_y_offset * math.tan(ray_angle - (math.pi/2)) 
+			point_x_offset = -point_y_offset * math.tan(ray_angle - (pi/2)) 
 			
-		elseif ray_angle < math.pi then
+		elseif ray_angle < pi then
 			-- Utilizes the horizontal line below the player
 			pointed_horizontal_line = (math.floor(player_y / cell_size) * cell_size) + cell_size
 			
 			-- Finds the point of intersection of the horizontal line and the player ray
 			point_y = player_y - (player_y - pointed_horizontal_line)
-			point_x = (player_y - pointed_horizontal_line) * math.tan(ray_angle - (math.pi/2)) + player_x
+			point_x = (player_y - pointed_horizontal_line) * math.tan(ray_angle - (pi/2)) + player_x
 			
 			-- Finds the point of intersection of the next horizontal line and the player ray
 			point_y_offset = cell_size 
-			point_x_offset = -point_y_offset * math.tan(ray_angle - (math.pi/2)) 
+			point_x_offset = -point_y_offset * math.tan(ray_angle - (pi/2)) 
 			
-		elseif ray_angle == 0 or ray_angle == math.pi then
+		elseif ray_angle == 0 or ray_angle == pi then
 			-- The horizontal line and player ray would be parallel, 
 			-- so default the point to the player and refuse checking for intersections.
 			point_x = player_x
@@ -139,7 +135,7 @@ function drawMap()
 			-- Checks if the intersections are within the bounds
 			if cell_x < level_x and cell_y < level_y and cell_x > -1 and cell_y > 0 then
 				-- Shifts the array to account for the bottom of the grid.
-				if ray_angle < math.pi then
+				if ray_angle < pi then
 					cell_y = cell_y + 1
 				end
 				
@@ -173,7 +169,7 @@ function drawMap()
 		local vertical_point_x = 0
 		local vertical_point_y = 0
 		
-		if ray_angle > math.pi/2 and ray_angle < (3*math.pi)/2 then
+		if ray_angle > pi/2 and ray_angle < (3*pi)/2 then
 			-- Calculates the vertical line left of the player needed to check the intersection
 			pointed_vertical_line = (math.floor(player_x / cell_size) * cell_size)
 			
@@ -184,7 +180,7 @@ function drawMap()
 			-- Finds the point of intersection of the next line and the player ray
 			point_x_offset = -cell_size 
 			point_y_offset = -point_x_offset * math.tan(-ray_angle) 
-		elseif ray_angle < math.pi/2 or ray_angle > (3*math.pi)/2 then
+		elseif ray_angle < pi/2 or ray_angle > (3*pi)/2 then
 			-- Calculates the vertical line right of the player needed to check the intersection
 			pointed_vertical_line = (math.floor(player_x / cell_size) * cell_size) + cell_size
 			
@@ -195,7 +191,7 @@ function drawMap()
 			-- Finds the point of intersection of the next vertical line and the player ray
 			point_x_offset = cell_size 
 			point_y_offset = -point_x_offset * math.tan(-ray_angle) 
-		elseif ray_angle == math.pi/2 or ray_angle == (3*math.pi)/2 then 
+		elseif ray_angle == pi/2 or ray_angle == (3*pi)/2 then 
 			-- The horizontal line and player ray would be parallel, 
 			-- so default the point to the player and refuse checking for intersections.
 			point_x = player_x
@@ -212,7 +208,7 @@ function drawMap()
 			-- Checks if the intersections are within the bounds
 			if cell_x < level_x and cell_y < level_y and cell_x > 0 and cell_y > -1 then
 				-- Shifts the array to account for the bottom of the grid.
-				if ray_angle < math.pi/2 or ray_angle > (3*math.pi)/2 then
+				if ray_angle < pi/2 or ray_angle > (3*pi)/2 then
 					cell_x = cell_x + 1
 				end
 				
@@ -259,9 +255,7 @@ function drawMap()
 		end
 		
 		-- Fixes fisheye
-		local cosine_angle = player_angle - ray_angle
-		if (cosine_angle < 0) then cosine_angle = cosine_angle + 2*math.pi end
-		if (cosine_angle > 2*math.pi) then cosine_angle = cosine_angle - 2*math.pi end
+		local cosine_angle = fixRadians(player_angle - ray_angle)
 		distance = distance * math.cos(cosine_angle)
 		
 		-- Draws the 3d Scene
@@ -276,7 +270,7 @@ function drawMap()
 			line_height = render_height
 		end
 		
-		local line_offset = (render_height/2)-line_height/2
+		local line_offset = (render_center_height)-line_height/2
 		
 		if line_height > render_height then
 			line_height = render_height
@@ -293,11 +287,11 @@ function drawMap()
 		if shade == 1 then
 			texture_x = math.floor(point_x / (cell_size / 32 )) % 32
 			-- Flips the texture at the south
-			if ray_angle < math.pi then texture_x = 31 - texture_x end
+			if ray_angle < pi then texture_x = 31 - texture_x end
 		else 
 			texture_x = math.floor(point_y / (cell_size / 32 )) % 32
 			-- Flips the texture at the south
-			if ray_angle > math.pi/2 and ray_angle < (3*math.pi)/2 then texture_x = 31 - texture_x end
+			if ray_angle > pi/2 and ray_angle < (3*pi)/2 then texture_x = 31 - texture_x end
 		end
 		
 		
@@ -307,43 +301,40 @@ function drawMap()
 			love.graphics.setColor(r * shade,g * shade,b * shade,a)
 			
 			love.graphics.line(starting_segment,line_offset + line_y,starting_segment,line_offset + line_y + 1)
+			-- love.graphics.points(starting_segment,line_offset + line_y)
 			texture_y = texture_y + texture_y_step
 		end
 		
 		-- DRAW FLOORS
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
 		-- spaced out from the walls.
-		-- local screen_height = render_height
-		-- local raFix = math.cos(cosine_angle)
-		-- local mysterynum = 93 -- There's gotta be a better way to get 224 right..
+		local mysterynum = 93 -- There's gotta be a better way to get 224 right..
+		local floor_shade = 0.9
 		
-		-- for line_y = line_offset+line_height, render_height do
-			-- local shade = 0.9
-			-- local ground_y = line_y - (screen_height/2)
-			-- local r, g, b, a = 0, 0, 0, 1
+		for line_y = line_offset+line_height, render_height do
+			local fisheye_floor_fix = math.cos(fixRadians(player_angle - ray_angle))
+			local ground_y = line_y - (render_height/2)
+			local r, g, b, a = 0, 0, 0, 1
+			local ground_texture_x = player_x + math.cos(ray_angle) * mysterynum * 30 / ground_y / fisheye_floor_fix
+			local ground_texture_y = player_y + math.sin(ray_angle) * mysterynum * 30 / ground_y / fisheye_floor_fix
+		
+			local mp = level_floors[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32
+			if mp ~= nil then r, g, b, a = textures_image:getPixel(bitand(math.floor(ground_texture_x), 31), bitand(math.floor(ground_texture_y), 31) + mp)end
 			
-			-- local ground_texture_x = player_x + math.cos(ray_angle) * (mysterynum + debug_number) * 32 / ground_y / raFix
-			-- local ground_texture_y = player_y + math.sin(ray_angle) * (mysterynum + debug_number)  * 32 / ground_y / raFix
+			love.graphics.setColor(r * floor_shade,g * floor_shade,b * floor_shade,a)
+			love.graphics.line(starting_segment,line_y,starting_segment,line_y + 1)
+			-- love.graphics.points(starting_segment,line_y)
 			
-			-- local mp = level_floors[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32
+			mp = level_ceilings[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32
 			
-			-- if mp ~= nil then
-				-- r, g, b, a = textures_image:getPixel(bitand(math.floor(ground_texture_x), 31), bitand(math.floor(ground_texture_y), 31) + mp)
-			-- end
+			if mp ~= nil and mp > 0 then
+				r, g, b, a = textures_image:getPixel(bitand(math.floor(ground_texture_x), 31), bitand(math.floor(ground_texture_y), 31) + mp)
+				love.graphics.setColor(r * floor_shade,g * floor_shade,b * floor_shade,a)
+				love.graphics.line(starting_segment,(render_height) - line_y,starting_segment,(render_height) - line_y + 1)
+			end
 			
-			-- love.graphics.setColor(r * shade,g * shade,b * shade,a)
-			-- love.graphics.line(starting_segment,line_y,starting_segment,line_y + 1)
-			
-			-- mp = level_ceilings[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32
-			
-			-- if mp ~= nil then
-				-- r, g, b, a = textures_image:getPixel(bitand(math.floor(ground_texture_x), 31), bitand(math.floor(ground_texture_y), 31) + mp)
-			-- end
-			
-			-- love.graphics.setColor(r * shade,g * shade,b * shade,a)
-			-- love.graphics.line(starting_segment,(screen_height) - line_y,starting_segment,(screen_height) - line_y + 1)
-			
-		-- end
+			-- love.graphics.points(starting_segment,(render_height) - line_y)
+		end
 		
 		-- local player_center_w = render_width / 2
 		-- local player_center_h = render_height / 2
@@ -357,15 +348,7 @@ function drawMap()
 		
 			-- love.graphics.setLineWidth(1)
 		-- Recalculates the ray angle for another added ray to span the field of view.
-		ray_angle = ray_angle + ((math.pi / 180) * (field_of_view / ray_count))
-		
-		if ray_angle < 0 then
-			ray_angle = ray_angle + (2*math.pi)
-		end
-		
-		if ray_angle > 2*math.pi then
-			ray_angle = ray_angle - (2*math.pi)
-		end
+		ray_angle = fixRadians(ray_angle + ((pi / 180) * (field_of_view / ray_count)))
 	end
 end
 
@@ -384,6 +367,18 @@ function bitand(a, b)
     return r
 end
 
+function fixRadians(ra)
+	if ra > 2*pi then
+		ra = ra - (2*pi)
+	end
+	
+	if ra < 0 then
+		ra = ra + (2*pi)
+	end
+	
+	return ra
+end
+
 function love.load(dt) 
 	player_delta_x = math.cos(player_angle) * player_speed
 	player_delta_y = math.sin(player_angle) * player_speed
@@ -396,15 +391,15 @@ function love.update(dt)
 	if love.keyboard.isDown("left") then
 		player_angle = player_angle - 0.05 * (dt * speed)
 		if player_angle < 0 then
-			player_angle = player_angle + 2 * math.pi
+			player_angle = player_angle + 2 * pi
 		end
 		player_delta_x = math.cos(player_angle) * player_speed
 		player_delta_y = math.sin(player_angle) * player_speed
 	end
 	if love.keyboard.isDown("right") then
 		player_angle = player_angle + 0.05 * (dt * speed)
-		if player_angle >= 2*math.pi then
-			player_angle = player_angle - 2 * math.pi
+		if player_angle >= 2*pi then
+			player_angle = player_angle - 2 * pi
 		end
 		player_delta_x = math.cos(player_angle) * player_speed
 		player_delta_y = math.sin(player_angle) * player_speed
@@ -487,7 +482,22 @@ function love.draw()
 	love.graphics.polygon("fill", sky)
 	love.graphics.setColor(0.2,0.7,0.2)
 	love.graphics.polygon("fill", ground)
-
+	
+	for y = 0, 119 do
+		for x = 0, 319 do
+			local meow = (-(player_angle / (2*pi)*4) * 320 - x)
+			
+			if meow < 0 then
+				meow = meow + 320
+			end
+			
+			meow = meow % 640
+			
+			local r, g, b, a = sky_image:getPixel(meow, y)
+			love.graphics.setColor(r,g,b,a)
+			love.graphics.points(x,y + 1)
+		end
+	end
 	
 	-- Draws the map
 	drawMap()
@@ -522,14 +532,8 @@ function love.draw()
 		
 		love.graphics.line(s_width / 2, s_height / 2, s_width / 2 + player_delta_x * 10, s_height / 2 + player_delta_y * 10)
 	end
+
 	
-	-- for y = 0, 31 do
-		-- for x = 0, 31 do
-			-- local r, g, b, a = textures_image:getPixel(x, y)
-			-- love.graphics.setColor(r,g,b,a)
-			-- love.graphics.points(x,y + 1)
-		-- end
-	-- end
 end
 function love.keypressed(key, scancode, isrepeat)
    if key == "escape" then
