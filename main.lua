@@ -26,11 +26,11 @@ level_floors = {{0,0,0,0,0,0,0},
 				{0,0,0,0,0,0,0}}
 			
 level_ceilings = {{0,0,0,0,0,0,0},
+				{0,1,1,1,1,1,0},
 				{0,0,0,0,0,0,0},
 				{0,0,0,0,0,0,0},
 				{0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0},
+				{0,1,1,1,1,1,0},
 				{0,0,0,0,0,0,0} }
 			
 
@@ -308,16 +308,34 @@ function drawMap()
 		-- DRAW FLOORS
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
 		-- spaced out from the walls.
+		local fisheye_floor_fix = math.cos(fixRadians(player_angle - ray_angle))
 		local mysterynum = 93 -- There's gotta be a better way to get 224 right..
 		local floor_shade = 0.9
 		
 		for line_y = line_offset+line_height, render_height do
-			local fisheye_floor_fix = math.cos(fixRadians(player_angle - ray_angle))
 			local ground_y = line_y - (render_height/2)
 			local r, g, b, a = 0, 0, 0, 1
 			local ground_texture_x = player_x + math.cos(ray_angle) * mysterynum * 30 / ground_y / fisheye_floor_fix
 			local ground_texture_y = player_y + math.sin(ray_angle) * mysterynum * 30 / ground_y / fisheye_floor_fix
-		
+
+			-- Failsafe just in case it goes out of bounds
+			if ground_texture_x < 0 then
+				ground_texture_x = 0
+			end
+			
+			if ground_texture_y < 0 then
+				ground_texture_y = 0
+			end
+			
+			if ground_texture_x / 32 > level_x then
+				ground_texture_x = level_x - 1
+			end
+			
+			if ground_texture_y / 32 > level_y then
+				ground_texture_y = level_y - 1
+			end
+			
+			
 			local mp = level_floors[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32
 			if mp ~= nil then r, g, b, a = textures_image:getPixel(bitand(math.floor(ground_texture_x), 31), bitand(math.floor(ground_texture_y), 31) + mp)end
 			
@@ -533,7 +551,7 @@ function love.draw()
 		love.graphics.line(s_width / 2, s_height / 2, s_width / 2 + player_delta_x * 10, s_height / 2 + player_delta_y * 10)
 	end
 
-	
+	love.graphics.print(debug_number, 0, 0)
 end
 function love.keypressed(key, scancode, isrepeat)
    if key == "escape" then
