@@ -60,18 +60,187 @@ render_center_width = render_width / 2
 render_center_height = render_height / 2
 
 -- Misc stuff
-debug_number = 0
+debug_number = 0 
 fps = 0
 
+-- Textures
 textures_image = love.image.newImageData("graphics/platform.png")
 sky_image = love.image.newImageData("graphics/sky.png")
 sprites_image = love.image.newImageData("graphics/smiley.png")
 
-speed = 50
+speed = 50 -- I already have a player speed ill remove this eventually
 sprites = {}
 
-depth = {}
+depth = {} -- Contains each rays distance value for sprite occlusion
 
+function love.load(dt) 
+	player_delta_x = math.cos(player_angle) * player_speed
+	player_delta_y = math.sin(player_angle) * player_speed
+	love.mouse.setGrabbed(true)
+	love.mouse.setVisible(false)
+	
+	sprites[1] = createSprite(1, 1, 0, 64, 64, 12)
+end
+
+
+function love.update(dt)
+	-- Player Movement
+	
+	-- Keyboard Turn
+	if love.keyboard.isDown("left") then
+		player_angle = player_angle - 0.05 * (dt * speed)
+		if player_angle < 0 then
+			player_angle = player_angle + 2 * pi
+		end
+		player_delta_x = math.cos(player_angle) * player_speed
+		player_delta_y = math.sin(player_angle) * player_speed
+	end
+	if love.keyboard.isDown("right") then
+		player_angle = player_angle + 0.05 * (dt * speed)
+		if player_angle >= 2*pi then
+			player_angle = player_angle - 2 * pi
+		end
+		player_delta_x = math.cos(player_angle) * player_speed
+		player_delta_y = math.sin(player_angle) * player_speed
+	end
+	
+	-- Mouse Turn
+	player_angle = player_angle + ((love.mouse.getX() - render_center_width) * 0.001) * (dt * speed)
+	if player_angle < 0 then
+		player_angle = player_angle + 2 * pi
+	end
+	if player_angle >= 2*pi then
+		player_angle = player_angle - 2 * pi
+	end
+	player_delta_x = math.cos(player_angle) * player_speed
+	player_delta_y = math.sin(player_angle) * player_speed
+	
+	love.mouse.setPosition(render_center_width,render_center_height)
+	
+	-- Player Transform
+	local player_boundary = 4
+	
+	local x_offset = 0
+	if player_delta_x < 0 then x_offset = -player_boundary else x_offset = player_boundary end
+	
+	local y_offset = 0
+	if player_delta_y < 0 then y_offset = -player_boundary else y_offset = player_boundary end
+	
+	local player_gridpos_x = player_x / cell_size
+	local gridpos_add_xoffset = (player_x + x_offset) / cell_size
+	local gridpos_sub_xoffset = (player_x - x_offset) / cell_size
+	
+	local player_gridpos_y = player_y / cell_size
+	local gridpos_add_yoffset = (player_y + y_offset) / cell_size
+	local gridpos_sub_yoffset = (player_y - y_offset) / cell_size
+	
+	
+	if love.keyboard.isDown("up") or love.keyboard.isDown("w") then
+		-- Checks if the offsets are within the bounds
+		if gridpos_add_xoffset < level_x and gridpos_add_yoffset < level_y and gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 then
+			if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == 0 then
+				player_x = player_x + player_delta_x * (dt * speed)
+			end
+			if level_walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
+				player_y = player_y + player_delta_y * (dt * speed)
+			end
+		end
+	end
+	if love.keyboard.isDown("down") or love.keyboard.isDown("s") then
+		if gridpos_sub_xoffset < level_x and gridpos_sub_yoffset < level_y and gridpos_sub_xoffset > 0 and gridpos_sub_yoffset > 0 then
+			if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_sub_xoffset + 1)] == 0 then
+				player_x = player_x - player_delta_x * (dt * speed)
+			end
+			if level_walls[math.floor(gridpos_sub_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
+				player_y = player_y - player_delta_y * (dt * speed)
+			end
+		end
+	end
+	
+	
+	if love.keyboard.isDown("e") then
+		-- Checks if the offsets are within the bounds
+		if gridpos_add_xoffset < level_x and gridpos_add_yoffset < level_y and gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 then
+			if level_walls[math.floor(player_gridpos_y) + 1]
+			[math.floor(gridpos_add_xoffset + 1)] == 4 then
+				level_walls[math.floor(player_gridpos_y) + 1]
+				[math.floor(gridpos_add_xoffset + 1)] = 0
+			end
+			
+			if level_walls[math.floor(gridpos_add_yoffset) + 1]
+			[math.floor(player_gridpos_x + 1)] == 4 then
+				level_walls[math.floor(gridpos_add_yoffset) + 1]
+				[math.floor(player_gridpos_x + 1)] = 0
+			end
+		end
+	end
+	
+	if love.keyboard.isDown("o") then
+		debug_number = debug_number - 1
+	end
+	if love.keyboard.isDown("p") then
+		debug_number = debug_number + 1
+	end
+	
+	-- Triggers
+	if math.floor(player_x / cell_size) == 1 and math.floor(player_y / cell_size) == 5 then
+		love.event.quit()
+	end
+	
+	fps = 1 / dt
+end
+function love.draw()
+	drawSky()
+	drawMap()
+	drawSprite()
+	
+	if map_toggle then
+		drawTopDownView()
+	end
+
+	love.graphics.print(debug_number, 0, 0)
+end
+function love.keypressed(key, scancode, isrepeat)
+   if key == "escape" then
+      love.event.quit()
+   end
+   if key == "i" then
+		map_toggle = not map_toggle
+   end
+end
+
+-- Calculation Functions
+-- Copied from a stack overflow question :3
+-- https://stackoverflow.com/questions/32387117/bitwise-and-in-lua
+-- Tbh i dont know what this code does but it WORKS so i am not
+-- touchibg it...
+function bitand(a, b)
+    local r, m = 0, 2^31
+    repeat
+        local sa, sb = a % m, b % m
+        if sa >= m/2 and sb >= m/2 then
+            r = r + m/2
+        end
+        a, b = sa, sb
+        m = m / 2
+    until m < 1
+    return r
+end
+
+-- Changes the radians to clamp it between 0 and 360 degrees
+function fixRadians(ra)
+	if ra > 2*pi then
+		ra = ra - (2*pi)
+	end
+	
+	if ra < 0 then
+		ra = ra + (2*pi)
+	end
+	
+	return ra
+end
+
+-- Object Functions
 function createSprite(iType, iState, iMap, ix, iy, iz) 
 	return {
 		type = iType,
@@ -83,6 +252,7 @@ function createSprite(iType, iState, iMap, ix, iy, iz)
 	}
 end
 
+-- Display Functions
 function drawMap()
 	local point_x, point_y, point_x_offset, point_y_offset, depth_of_field
 	local distance = 0
@@ -470,164 +640,3 @@ function drawSprite()
 	end
 end
 
-function love.load(dt) 
-	player_delta_x = math.cos(player_angle) * player_speed
-	player_delta_y = math.sin(player_angle) * player_speed
-	love.mouse.setGrabbed(true)
-	love.mouse.setVisible(false)
-	
-	sprites[1] = createSprite(1, 1, 0, 64, 64, 12)
-end
-
-
-function love.update(dt)
-	-- Player Movement
-	
-	-- Keyboard Turn
-	if love.keyboard.isDown("left") then
-		player_angle = player_angle - 0.05 * (dt * speed)
-		if player_angle < 0 then
-			player_angle = player_angle + 2 * pi
-		end
-		player_delta_x = math.cos(player_angle) * player_speed
-		player_delta_y = math.sin(player_angle) * player_speed
-	end
-	if love.keyboard.isDown("right") then
-		player_angle = player_angle + 0.05 * (dt * speed)
-		if player_angle >= 2*pi then
-			player_angle = player_angle - 2 * pi
-		end
-		player_delta_x = math.cos(player_angle) * player_speed
-		player_delta_y = math.sin(player_angle) * player_speed
-	end
-	
-	-- Mouse Turn
-	player_angle = player_angle + ((love.mouse.getX() - render_center_width) * 0.001) * (dt * speed)
-	if player_angle < 0 then
-		player_angle = player_angle + 2 * pi
-	end
-	if player_angle >= 2*pi then
-		player_angle = player_angle - 2 * pi
-	end
-	player_delta_x = math.cos(player_angle) * player_speed
-	player_delta_y = math.sin(player_angle) * player_speed
-	
-	love.mouse.setPosition(render_center_width,render_center_height)
-	
-	-- Player Transform
-	local player_boundary = 4
-	
-	local x_offset = 0
-	if player_delta_x < 0 then x_offset = -player_boundary else x_offset = player_boundary end
-	
-	local y_offset = 0
-	if player_delta_y < 0 then y_offset = -player_boundary else y_offset = player_boundary end
-	
-	local player_gridpos_x = player_x / cell_size
-	local gridpos_add_xoffset = (player_x + x_offset) / cell_size
-	local gridpos_sub_xoffset = (player_x - x_offset) / cell_size
-	
-	local player_gridpos_y = player_y / cell_size
-	local gridpos_add_yoffset = (player_y + y_offset) / cell_size
-	local gridpos_sub_yoffset = (player_y - y_offset) / cell_size
-	
-	
-	if love.keyboard.isDown("up") or love.keyboard.isDown("w") then
-		-- Checks if the offsets are within the bounds
-		if gridpos_add_xoffset < level_x and gridpos_add_yoffset < level_y and gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 then
-			if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == 0 then
-				player_x = player_x + player_delta_x * (dt * speed)
-			end
-			if level_walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
-				player_y = player_y + player_delta_y * (dt * speed)
-			end
-		end
-	end
-	if love.keyboard.isDown("down") or love.keyboard.isDown("s") then
-		if gridpos_sub_xoffset < level_x and gridpos_sub_yoffset < level_y and gridpos_sub_xoffset > 0 and gridpos_sub_yoffset > 0 then
-			if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_sub_xoffset + 1)] == 0 then
-				player_x = player_x - player_delta_x * (dt * speed)
-			end
-			if level_walls[math.floor(gridpos_sub_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
-				player_y = player_y - player_delta_y * (dt * speed)
-			end
-		end
-	end
-	
-	
-	if love.keyboard.isDown("e") then
-		-- Checks if the offsets are within the bounds
-		if gridpos_add_xoffset < level_x and gridpos_add_yoffset < level_y and gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 then
-			if level_walls[math.floor(player_gridpos_y) + 1]
-			[math.floor(gridpos_add_xoffset + 1)] == 4 then
-				level_walls[math.floor(player_gridpos_y) + 1]
-				[math.floor(gridpos_add_xoffset + 1)] = 0
-			end
-			
-			if level_walls[math.floor(gridpos_add_yoffset) + 1]
-			[math.floor(player_gridpos_x + 1)] == 4 then
-				level_walls[math.floor(gridpos_add_yoffset) + 1]
-				[math.floor(player_gridpos_x + 1)] = 0
-			end
-		end
-	end
-	
-	if love.keyboard.isDown("o") then
-		debug_number = debug_number - 1
-	end
-	if love.keyboard.isDown("p") then
-		debug_number = debug_number + 1
-	end
-	
-	-- Triggers
-	if math.floor(player_x / cell_size) == 1 and math.floor(player_y / cell_size) == 5 then
-		love.event.quit()
-	end
-	
-	fps = 1 / dt
-end
-function love.draw()
-	drawSky()
-	drawMap()
-	drawSprite()
-	
-	if map_toggle then
-		drawTopDownView()
-	end
-
-	love.graphics.print(debug_number, 0, 0)
-end
-function love.keypressed(key, scancode, isrepeat)
-   if key == "escape" then
-      love.event.quit()
-   end
-   if key == "i" then
-		map_toggle = not map_toggle
-   end
-end
-
--- Copied from a stack overflow question :3
--- https://stackoverflow.com/questions/32387117/bitwise-and-in-lua
-function bitand(a, b)
-    local r, m = 0, 2^31
-    repeat
-        local sa, sb = a % m, b % m
-        if sa >= m/2 and sb >= m/2 then
-            r = r + m/2
-        end
-        a, b = sa, sb
-        m = m / 2
-    until m < 1
-    return r
-end
-function fixRadians(ra)
-	if ra > 2*pi then
-		ra = ra - (2*pi)
-	end
-	
-	if ra < 0 then
-		ra = ra + (2*pi)
-	end
-	
-	return ra
-end
