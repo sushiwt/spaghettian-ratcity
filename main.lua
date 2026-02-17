@@ -13,7 +13,7 @@ level_walls = {	{1,1,2,2,1,1,1},
 				{1,0,0,0,0,0,1},
 				{1,0,0,0,1,0,1},
 				{1,0,0,0,0,0,1},
-				{1,0,1,0,0,0,1},
+				{1,4,1,0,0,0,1},
 				{1,0,4,0,0,0,1},
 				{1,1,1,1,3,1,1} }
 				
@@ -65,6 +65,23 @@ fps = 0
 
 textures_image = love.image.newImageData("graphics/platform.png")
 sky_image = love.image.newImageData("graphics/sky.png")
+sprites_image = love.image.newImageData("graphics/smiley.png")
+
+speed = 50
+sprites = {}
+
+depth = {}
+
+function createSprite(iType, iState, iMap, ix, iy, iz) 
+	return {
+		type = iType,
+		state = iState,
+		map = iMap,
+		x = ix,
+		y = iy,
+		z = iz,
+	}
+end
 
 function drawMap()
 	local point_x, point_y, point_x_offset, point_y_offset, depth_of_field
@@ -279,6 +296,8 @@ function drawMap()
 		love.graphics.setLineWidth(quality)
 		local starting_segment = rays*quality
 		
+		depth[rays + 1] = distance
+		
 		-- DRAW WALLS
 		-- Add way to change texture size later. 32x32 is the size of the textures
 		local texture_y = texture_y_offset * texture_y_step + (level_texture * 32)
@@ -294,7 +313,6 @@ function drawMap()
 			if ray_angle > pi/2 and ray_angle < (3*pi)/2 then texture_x = 31 - texture_x end
 		end
 		
-		
 		-- TODO OPTIMIZE LATER HLY SHIT it sucks
 		for line_y = 0, line_height do
 			local r, g, b, a = textures_image:getPixel(math.floor(texture_x), math.floor(texture_y))
@@ -309,7 +327,7 @@ function drawMap()
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
 		-- spaced out from the walls.
 		local fisheye_floor_fix = math.cos(fixRadians(player_angle - ray_angle))
-		local mysterynum = 93 -- There's gotta be a better way to get 224 right..
+		local mysterynum = 96 -- There's gotta be a better way to get 224 right..
 		local floor_shade = 0.9
 		
 		for line_y = line_offset+line_height, render_height do
@@ -319,22 +337,10 @@ function drawMap()
 			local ground_texture_y = player_y + math.sin(ray_angle) * mysterynum * 30 / ground_y / fisheye_floor_fix
 
 			-- Failsafe just in case it goes out of bounds
-			if ground_texture_x < 0 then
-				ground_texture_x = 0
-			end
-			
-			if ground_texture_y < 0 then
-				ground_texture_y = 0
-			end
-			
-			if ground_texture_x / 32 > level_x then
-				ground_texture_x = level_x - 1
-			end
-			
-			if ground_texture_y / 32 > level_y then
-				ground_texture_y = level_y - 1
-			end
-			
+			if ground_texture_x < 0 then ground_texture_x = 0 end
+			if ground_texture_y < 0 then ground_texture_y = 0 end
+			if ground_texture_x / 32 > level_x then ground_texture_x = level_x - 1 end
+			if ground_texture_y / 32 > level_y then ground_texture_y = level_y - 1 end
 			
 			local mp = level_floors[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32
 			if mp ~= nil then r, g, b, a = textures_image:getPixel(bitand(math.floor(ground_texture_x), 31), bitand(math.floor(ground_texture_y), 31) + mp)end
@@ -370,42 +376,114 @@ function drawMap()
 	end
 end
 
--- Copied from a stack overflow question :3
--- https://stackoverflow.com/questions/32387117/bitwise-and-in-lua
-function bitand(a, b)
-    local r, m = 0, 2^31
-    repeat
-        local sa, sb = a % m, b % m
-        if sa >= m/2 and sb >= m/2 then
-            r = r + m/2
-        end
-        a, b = sa, sb
-        m = m / 2
-    until m < 1
-    return r
+function drawSky() 
+	for y = 0, 119 do
+		for x = 0, 319 do
+			local meow = (-(player_angle / (2*pi)*4) * 320 - x)
+			
+			if meow < 0 then
+				meow = meow + 320
+			end
+			
+			meow = meow % 640
+			
+			local r, g, b, a = sky_image:getPixel(meow, y)
+			love.graphics.setColor(r,g,b,a)
+			love.graphics.points(x,y + 1)
+		end
+	end
 end
 
-function fixRadians(ra)
-	if ra > 2*pi then
-		ra = ra - (2*pi)
+function drawTopDownView() 
+	-- Draws the background of the map overlay
+	love.graphics.setColor(0,0,0, 0.75)
+	love.graphics.rectangle("fill", 0,0,render_width,render_height)
+
+	-- Draws the level
+	for row, row_value in pairs(level_walls) do
+		for column, column_value in ipairs(row_value) do
+			love.graphics.setColor(1,1,1, 0.8)
+			
+			row_left = row * cell_size - cell_size - player_y + (render_height / 2)
+			column_top = column * cell_size - cell_size - player_x + (render_width / 2)
+			row_right = row * cell_size - player_y + (render_height / 2)
+			column_bottom = column * cell_size - player_x + (render_width / 2)
+			
+			local vertices = {column_top, row_left, column_top, row_right, column_bottom, row_right, column_bottom, row_left}
+			
+			if column_value > 0 then
+				love.graphics.polygon("fill", vertices)
+			end
+		end
 	end
 	
-	if ra < 0 then
-		ra = ra + (2*pi)
-	end
+	-- Draws the player
+	love.graphics.setColor(255, 0, 0)
+	love.graphics.circle( "fill", render_width / 2, render_height / 2, 3)
 	
-	return ra
+	love.graphics.line(render_width / 2, render_height / 2, render_width / 2 + player_delta_x * 10, render_height / 2 + player_delta_y * 10)
+	
+end
+
+function drawSprite() 
+	local sprite_x = sprites[1].x - player_x
+	local sprite_y = sprites[1].y - player_y
+	local sprite_z = sprites[1].z
+	
+	local CS = math.cos(player_angle)
+	local SS = -math.sin(player_angle)
+	
+	local a = sprite_y * CS + sprite_x * SS
+	local b = sprite_x * CS - sprite_y * SS
+	sprite_x = a
+	sprite_y = b
+	
+	sprite_x = (sprite_x * 215 / sprite_y)+(render_width/2)
+	sprite_y = (sprite_z * 215 / sprite_y)+(render_height/2)
+	
+	print(sprite_x)
+	local sprite_size = 16
+	local scale = sprite_size * render_height / b
+	local sprite_texture_x = 0
+	local sprite_texture_y = 16
+	
+	for x = sprite_x-scale/2, sprite_x+scale/2 do
+		-- The third condition is a failsafe to not cause an out of bounds error,
+		-- but it refuses to draw the rest of the sprite because of it.
+		-- Fix it later
+		sprite_texture_y = 16
+		for y = 0, scale do
+			if sprite_x > 0 and sprite_x < render_width and b > 0 and depth[math.floor(x/quality) + 1] ~= nil and b < depth[math.floor(x/quality) + 1] then
+				local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x),math.floor(sprite_texture_y))
+				
+				love.graphics.setColor(r,g,b,a)
+				love.graphics.points(x, sprite_y - y)
+			end	
+			sprite_texture_y = sprite_texture_y - (sprite_size / scale)
+			
+			if sprite_texture_y < 0 then
+				sprite_texture_y = 0
+			end
+		end
+		sprite_texture_x = sprite_texture_x + ((sprite_size)/ scale)
+		
+	end
 end
 
 function love.load(dt) 
 	player_delta_x = math.cos(player_angle) * player_speed
 	player_delta_y = math.sin(player_angle) * player_speed
+	love.mouse.setGrabbed(true)
+	love.mouse.setVisible(false)
+	
+	sprites[1] = createSprite(1, 1, 0, 64, 64, 12)
 end
 
-speed = 50
 
 function love.update(dt)
 	-- Player Movement
+	
+	-- Keyboard Turn
 	if love.keyboard.isDown("left") then
 		player_angle = player_angle - 0.05 * (dt * speed)
 		if player_angle < 0 then
@@ -423,6 +501,20 @@ function love.update(dt)
 		player_delta_y = math.sin(player_angle) * player_speed
 	end
 	
+	-- Mouse Turn
+	player_angle = player_angle + ((love.mouse.getX() - render_center_width) * 0.001) * (dt * speed)
+	if player_angle < 0 then
+		player_angle = player_angle + 2 * pi
+	end
+	if player_angle >= 2*pi then
+		player_angle = player_angle - 2 * pi
+	end
+	player_delta_x = math.cos(player_angle) * player_speed
+	player_delta_y = math.sin(player_angle) * player_speed
+	
+	love.mouse.setPosition(render_center_width,render_center_height)
+	
+	-- Player Transform
 	local player_boundary = 4
 	
 	local x_offset = 0
@@ -440,7 +532,7 @@ function love.update(dt)
 	local gridpos_sub_yoffset = (player_y - y_offset) / cell_size
 	
 	
-	if love.keyboard.isDown("up") then
+	if love.keyboard.isDown("up") or love.keyboard.isDown("w") then
 		-- Checks if the offsets are within the bounds
 		if gridpos_add_xoffset < level_x and gridpos_add_yoffset < level_y and gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 then
 			if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == 0 then
@@ -451,7 +543,7 @@ function love.update(dt)
 			end
 		end
 	end
-	if love.keyboard.isDown("down") then
+	if love.keyboard.isDown("down") or love.keyboard.isDown("s") then
 		if gridpos_sub_xoffset < level_x and gridpos_sub_yoffset < level_y and gridpos_sub_xoffset > 0 and gridpos_sub_yoffset > 0 then
 			if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_sub_xoffset + 1)] == 0 then
 				player_x = player_x - player_delta_x * (dt * speed)
@@ -461,94 +553,46 @@ function love.update(dt)
 			end
 		end
 	end
+	
+	
 	if love.keyboard.isDown("e") then
 		-- Checks if the offsets are within the bounds
 		if gridpos_add_xoffset < level_x and gridpos_add_yoffset < level_y and gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 then
-			if 
-			level_walls[math.floor(player_gridpos_y) + 1]
-			[math.floor(gridpos_add_xoffset + 1)] == 4 or 
-			level_walls[math.floor(gridpos_add_yoffset) + 1]
-			[math.floor(player_gridpos_x + 1)] == 4 then
+			if level_walls[math.floor(player_gridpos_y) + 1]
+			[math.floor(gridpos_add_xoffset + 1)] == 4 then
 				level_walls[math.floor(player_gridpos_y) + 1]
 				[math.floor(gridpos_add_xoffset + 1)] = 0
+			end
+			
+			if level_walls[math.floor(gridpos_add_yoffset) + 1]
+			[math.floor(player_gridpos_x + 1)] == 4 then
+				level_walls[math.floor(gridpos_add_yoffset) + 1]
+				[math.floor(player_gridpos_x + 1)] = 0
 			end
 		end
 	end
 	
 	if love.keyboard.isDown("o") then
 		debug_number = debug_number - 1
-		cell_size = cell_size - 1
 	end
 	if love.keyboard.isDown("p") then
 		debug_number = debug_number + 1
-		cell_size = cell_size + 1
 	end
-
+	
+	-- Triggers
+	if math.floor(player_x / cell_size) == 1 and math.floor(player_y / cell_size) == 5 then
+		love.event.quit()
+	end
 	
 	fps = 1 / dt
 end
-
 function love.draw()
-	-- Draws the sky and ground
-	local s_width = render_width
-	local s_height = render_height
-	
-	local sky = {0,0, s_width,0, s_width,s_height/2, 0,s_height/2}
-	local ground = {0,s_height/2, s_width,s_height/2, s_width,s_height, 0,s_height}
-	
-	love.graphics.setColor(0.4,0.8,1)
-	love.graphics.polygon("fill", sky)
-	love.graphics.setColor(0.2,0.7,0.2)
-	love.graphics.polygon("fill", ground)
-	
-	for y = 0, 119 do
-		for x = 0, 319 do
-			local meow = (-(player_angle / (2*pi)*4) * 320 - x)
-			
-			if meow < 0 then
-				meow = meow + 320
-			end
-			
-			meow = meow % 640
-			
-			local r, g, b, a = sky_image:getPixel(meow, y)
-			love.graphics.setColor(r,g,b,a)
-			love.graphics.points(x,y + 1)
-		end
-	end
-	
-	-- Draws the map
+	drawSky()
 	drawMap()
+	drawSprite()
 	
 	if map_toggle then
-		-- Draws the background of the map overlay
-		love.graphics.setColor(0,0,0, 0.75)
-		love.graphics.rectangle("fill", 0,0,s_width,s_height)
-	
-		-- Draws the level
-		for row, row_value in pairs(level_walls) do
-			for column, column_value in ipairs(row_value) do
-				love.graphics.setColor(1,1,1, 0.8)
-				
-				row_left = row * cell_size - cell_size - player_y + (s_height / 2)
-				column_top = column * cell_size - cell_size - player_x + (s_width / 2)
-				row_right = row * cell_size - player_y + (s_height / 2)
-				column_bottom = column * cell_size - player_x + (s_width / 2)
-				
-				local vertices = {column_top, row_left, column_top, row_right, column_bottom, row_right, column_bottom, row_left}
-				
-				if column_value > 0 then
-					love.graphics.polygon("fill", vertices)
-				end
-			end
-		end
-		
-		
-		-- Draws the player
-		love.graphics.setColor(255, 0, 0)
-		love.graphics.circle( "fill", s_width / 2, s_height / 2, 3)
-		
-		love.graphics.line(s_width / 2, s_height / 2, s_width / 2 + player_delta_x * 10, s_height / 2 + player_delta_y * 10)
+		drawTopDownView()
 	end
 
 	love.graphics.print(debug_number, 0, 0)
@@ -560,4 +604,30 @@ function love.keypressed(key, scancode, isrepeat)
    if key == "i" then
 		map_toggle = not map_toggle
    end
+end
+
+-- Copied from a stack overflow question :3
+-- https://stackoverflow.com/questions/32387117/bitwise-and-in-lua
+function bitand(a, b)
+    local r, m = 0, 2^31
+    repeat
+        local sa, sb = a % m, b % m
+        if sa >= m/2 and sb >= m/2 then
+            r = r + m/2
+        end
+        a, b = sa, sb
+        m = m / 2
+    until m < 1
+    return r
+end
+function fixRadians(ra)
+	if ra > 2*pi then
+		ra = ra - (2*pi)
+	end
+	
+	if ra < 0 then
+		ra = ra + (2*pi)
+	end
+	
+	return ra
 end
