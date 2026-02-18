@@ -41,7 +41,7 @@ level_y = 7
 wall_height = 30
 cell_size = 32
 
-quality = 4 -- Calculates how wide each segment of the screen would be for the rays
+quality = 1 -- Calculates how wide each segment of the screen would be for the rays
 field_of_view = 75 -- The amount of area the player can see
 
 pi = math.pi
@@ -191,6 +191,7 @@ function love.update(dt)
 	
 	fps = 1 / dt
 end
+
 function love.draw()
 	drawSky()
 	drawMap()
@@ -614,22 +615,25 @@ function drawSprite()
 	sprite_y = (sprite_z * 215 / sprite_y)+(render_height/2)
 	
 	print(sprite_x)
-	local sprite_size = 16
-	local scale = sprite_size * render_height / b
+	local sprite_size = 16 
+	local scale = (sprite_size) * quality
 	local sprite_texture_x = 0
 	local sprite_texture_y = 16
 	
-	for x = sprite_x-scale/2, sprite_x+scale/2 do
+	for x = sprite_x - scale / 2, sprite_x + scale / 2 do
 		-- The third condition is a failsafe to not cause an out of bounds error,
 		-- but it refuses to draw the rest of the sprite because of it.
 		-- Fix it later
 		sprite_texture_y = 16
 		for y = 0, scale do
-			if sprite_x > 0 and sprite_x < render_width and b > 0 and depth[math.floor(x/quality) + 1] ~= nil and b < depth[math.floor(x/quality) + 1] then
+			if sprite_x > 0 and sprite_x < render_width and 
+			depth[math.floor(x/quality) + 1] ~= nil and 
+			b > 0 and b < depth[math.floor(x/quality) + 1] and 
+			sprite_y - y < render_height then
 				local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x),math.floor(sprite_texture_y))
 				
 				love.graphics.setColor(r,g,b,a)
-				love.graphics.points(x, sprite_y - y)
+				love.graphics.points(x, (sprite_y - y))
 			end	
 			sprite_texture_y = sprite_texture_y - (sprite_size / scale)
 			
@@ -638,7 +642,7 @@ function drawSprite()
 			end
 		end
 		sprite_texture_x = sprite_texture_x + ((sprite_size)/ scale)
-		
 	end
+	
 end
 
