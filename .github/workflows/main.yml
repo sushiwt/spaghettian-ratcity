@@ -1,0 +1,59 @@
+# This is a basic workflow to help you get started with Actions
+# sushi here.. i have NEVER used github actions before...bare with me pleaseee <3
+
+name: Spaghettian Ratcity
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+      - name: LÖVE Build
+  # You may pin to the exact commit or the version.
+  # uses: nhartland/love-build@458f856e40adb4be8f24655f569f929da1f5d657
+        uses: nhartland/love-build@v1.0.1
+        with:
+          # Name of the application to be built
+          app_name: spaghettian-ratcity
+          # Version of LÖVE to be used in building the application
+          love_version: 11.5
+          # Path to dependencies rockspec relative to GitHub workspace
+          dependencies: # optional
+          # Path in the repository to the subdirectory containing `main.lua`. By default the repo root
+          source_dir: ./
+          # Directory in the GitHub workspace where the built distributables should be located
+          result_dir: release
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          
+          # Create a new release and generate notes automatically
+          # This command creates the release and outputs its upload URL
+          gh release create "$TAG" \
+            --title="$TAG" \
+            --generate-notes
+          
+          # Example of uploading a built artifact (replace 'my-artifact.zip' with your file)
+          # Make sure your build step creates the file before this step
+          gh release upload "$TAG" release/* --clobber
