@@ -1,3 +1,5 @@
+-- Spaghettian Ratcity v0.1
+
 -- Code written and documented by sushiwt 
 -- and based on the Raycaster tutorials by 3DSage :3
 
