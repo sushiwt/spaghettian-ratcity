@@ -41,7 +41,7 @@ level_y = 7
 wall_height = 30
 cell_size = 32
 
-quality = 1 -- Calculates how wide each segment of the screen would be for the rays
+quality = 8 -- Calculates how wide each segment of the screen would be for the rays
 field_of_view = 75 -- The amount of area the player can see
 
 pi = math.pi
@@ -75,13 +75,14 @@ sprites = {}
 
 depth = {} -- Contains each rays distance value for sprite occlusion
 
+
 function love.load(dt) 
 	player_delta_x = math.cos(player_angle) * player_speed
 	player_delta_y = math.sin(player_angle) * player_speed
 	love.mouse.setGrabbed(true)
 	love.mouse.setVisible(false)
 	
-	sprites[1] = createSprite(1, 1, 0, 64, 64, 12)
+	sprites[1] = createSprite(1, 1, 0, 64, 64, 8)
 end
 
 
@@ -191,7 +192,6 @@ function love.update(dt)
 	
 	fps = 1 / dt
 end
-
 function love.draw()
 	drawSky()
 	drawMap()
@@ -561,6 +561,7 @@ function drawSky()
 			meow = meow % 640
 			
 			local r, g, b, a = sky_image:getPixel(meow, y)
+
 			love.graphics.setColor(r,g,b,a)
 			love.graphics.points(x,y + 1)
 		end
@@ -616,11 +617,11 @@ function drawSprite()
 	
 	print(sprite_x)
 	local sprite_size = 16 
-	local scale = (sprite_size) * quality
+	local scale = (sprite_size * render_height / b)
 	local sprite_texture_x = 0
 	local sprite_texture_y = 16
 	
-	for x = sprite_x - scale / 2, sprite_x + scale / 2 do
+	for x = sprite_x - scale / 2, sprite_x + scale / 2, quality do
 		-- The third condition is a failsafe to not cause an out of bounds error,
 		-- but it refuses to draw the rest of the sprite because of it.
 		-- Fix it later
@@ -630,10 +631,11 @@ function drawSprite()
 			depth[math.floor(x/quality) + 1] ~= nil and 
 			b > 0 and b < depth[math.floor(x/quality) + 1] and 
 			sprite_y - y < render_height then
-				local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x),math.floor(sprite_texture_y))
+				local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x * quality),math.floor(sprite_texture_y))
 				
+				love.graphics.setLineWidth(quality)
 				love.graphics.setColor(r,g,b,a)
-				love.graphics.points(x, (sprite_y - y))
+				love.graphics.line(x, sprite_y - y,x, sprite_y - y + 1)
 			end	
 			sprite_texture_y = sprite_texture_y - (sprite_size / scale)
 			
