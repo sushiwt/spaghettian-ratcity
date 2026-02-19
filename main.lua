@@ -1,4 +1,4 @@
--- Spaghettian Ratcity v0.1
+-- Spaghettian Ratcity v0.1.2
 
 -- Code written and documented by sushiwt 
 -- and based on the Raycaster tutorials by 3DSage :3
@@ -41,7 +41,7 @@ level_y = 7
 wall_height = 30
 cell_size = 32
 
-quality = 8 -- Calculates how wide each segment of the screen would be for the rays
+quality = 4 -- Calculates how wide each segment of the screen would be for the rays
 field_of_view = 75 -- The amount of area the player can see
 
 pi = math.pi
@@ -192,7 +192,10 @@ function love.update(dt)
 	
 	fps = 1 / dt
 end
+
 function love.draw()
+	love.graphics.setPointSize(quality)
+
 	drawSky()
 	drawMap()
 	drawSprite()
@@ -203,6 +206,7 @@ function love.draw()
 
 	love.graphics.print(debug_number, 0, 0)
 end
+
 function love.keypressed(key, scancode, isrepeat)
    if key == "escape" then
       love.event.quit()
@@ -448,7 +452,7 @@ function drawMap()
 		local cosine_angle = fixRadians(player_angle - ray_angle)
 		distance = distance * math.cos(cosine_angle)
 		
-		-- Draws the 3d Scene
+		-- 3D WALL DRAWINGS
 		local line_height = (wall_height * render_height)/distance
 		
 		-- The numerator takes care of the line segment somethng important
@@ -469,6 +473,7 @@ function drawMap()
 		love.graphics.setLineWidth(quality)
 		local starting_segment = rays*quality
 		
+		-- Draws the depth of each ray
 		depth[rays + 1] = distance
 		
 		-- DRAW WALLS
@@ -486,15 +491,25 @@ function drawMap()
 			if ray_angle > pi/2 and ray_angle < (3*pi)/2 then texture_x = 31 - texture_x end
 		end
 		
+		-- Resets the color before generating the strip
+		love.graphics.setColor(1,1,1,1)
+		
+		-- A list of points to draw the wall strips.
+		local wall_strip = {}
+		
 		-- TODO OPTIMIZE LATER HLY SHIT it sucks
 		for line_y = 0, line_height do
 			local r, g, b, a = textures_image:getPixel(math.floor(texture_x), math.floor(texture_y))
-			love.graphics.setColor(r * shade,g * shade,b * shade,a)
 			
-			love.graphics.line(starting_segment,line_offset + line_y,starting_segment,line_offset + line_y + 1)
+			wall_strip[line_y] = {starting_segment, line_offset + line_y, r * shade, g * shade, b * shade, a}
+			-- love.graphics.setColor(r * shade,g * shade,b * shade,a)
 			-- love.graphics.points(starting_segment,line_offset + line_y)
 			texture_y = texture_y + texture_y_step
 		end
+		
+		-- A list of points to draw the floor and ceiling strips
+		local floor_strip = {}
+		local ceiling_strip = {}
 		
 		-- DRAW FLOORS
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
@@ -503,6 +518,8 @@ function drawMap()
 		local mysterynum = 96 -- There's gotta be a better way to get 224 right..
 		local floor_shade = 0.9
 		
+		local floor_strip_index = 0
+		local ceiling_strip_index = 0
 		for line_y = line_offset+line_height, render_height do
 			local ground_y = line_y - (render_height/2)
 			local r, g, b, a = 0, 0, 0, 1
@@ -518,20 +535,28 @@ function drawMap()
 			local mp = level_floors[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32
 			if mp ~= nil then r, g, b, a = textures_image:getPixel(bitand(math.floor(ground_texture_x), 31), bitand(math.floor(ground_texture_y), 31) + mp)end
 			
-			love.graphics.setColor(r * floor_shade,g * floor_shade,b * floor_shade,a)
-			love.graphics.line(starting_segment,line_y,starting_segment,line_y + 1)
+			-- love.graphics.setColor(r * floor_shade,g * floor_shade,b * floor_shade,a)
 			-- love.graphics.points(starting_segment,line_y)
+			
+			floor_strip[floor_strip_index] = {starting_segment,line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
+			floor_strip_index = floor_strip_index + 1
 			
 			mp = level_ceilings[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32
 			
 			if mp ~= nil and mp > 0 then
 				r, g, b, a = textures_image:getPixel(bitand(math.floor(ground_texture_x), 31), bitand(math.floor(ground_texture_y), 31) + mp)
-				love.graphics.setColor(r * floor_shade,g * floor_shade,b * floor_shade,a)
-				love.graphics.line(starting_segment,(render_height) - line_y,starting_segment,(render_height) - line_y + 1)
+				-- love.graphics.setColor(r * floor_shade,g * floor_shade,b * floor_shade,a)
+				-- love.graphics.points(starting_segment,(render_height) - line_y)
+				ceiling_strip[ceiling_strip_index] = {starting_segment,(render_height) - line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
+				ceiling_strip_index = ceiling_strip_index + 1
 			end
 			
-			-- love.graphics.points(starting_segment,(render_height) - line_y)
 		end
+		
+		-- Draws the map layer by layer
+		love.graphics.points(wall_strip)
+		love.graphics.points(floor_strip)
+		love.graphics.points(ceiling_strip)
 		
 		-- local player_center_w = render_width / 2
 		-- local player_center_h = render_height / 2
@@ -621,6 +646,9 @@ function drawSprite()
 	local sprite_texture_x = 0
 	local sprite_texture_y = 16
 	
+	local sprite_strip = {}
+	local sprite_strip_index = 0
+	
 	for x = sprite_x - scale / 2, sprite_x + scale / 2, quality do
 		-- The third condition is a failsafe to not cause an out of bounds error,
 		-- but it refuses to draw the rest of the sprite because of it.
@@ -633,9 +661,10 @@ function drawSprite()
 			sprite_y - y < render_height then
 				local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x * quality),math.floor(sprite_texture_y))
 				
-				love.graphics.setLineWidth(quality)
-				love.graphics.setColor(r,g,b,a)
-				love.graphics.line(x, sprite_y - y,x, sprite_y - y + 1)
+				-- love.graphics.setColor(r,g,b,a)
+				-- love.graphics.points(x, sprite_y - y)
+				sprite_strip[sprite_strip_index] = {x, sprite_y - y, r,g,b,a}
+				sprite_strip_index = sprite_strip_index + 1
 			end	
 			sprite_texture_y = sprite_texture_y - (sprite_size / scale)
 			
@@ -645,6 +674,9 @@ function drawSprite()
 		end
 		sprite_texture_x = sprite_texture_x + ((sprite_size)/ scale)
 	end
+	
+	
+	love.graphics.points(sprite_strip)
 	
 end
 
