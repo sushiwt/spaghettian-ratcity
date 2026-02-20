@@ -11,21 +11,22 @@
 
 
 -- Level properties
-level_walls = {	{1,1,2,2,1,1,1},
-				{1,0,0,0,0,0,1},
 				{1,0,0,0,1,0,1},
-				{1,0,0,0,0,0,1},
-				{1,4,1,0,0,0,1},
+level_walls = {	{0,0,1,2,1,0,0},
+				{0,0,0,0,0,0,0},
+				{0,0,0,0,1,0,0},
+				{0,0,4,0,0,0,0},
+				{1,1,1,0,0,0,0},
 				{1,0,4,0,0,0,1},
-				{1,1,1,1,3,1,1} }
+				{1,1,1,0,3,0,0} }
 				
-level_floors = {{0,0,0,0,0,0,0},
-				{0,1,1,1,1,1,0},
-				{0,1,1,1,1,1,0},
-				{0,1,1,1,1,1,0},
-				{0,1,1,1,1,1,0},
-				{0,1,1,1,1,1,0},
-				{0,0,0,0,0,0,0}}
+level_floors = {{1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1}}
 			
 level_ceilings = {{0,0,0,0,0,0,0},
 				{0,1,1,1,1,1,0},
@@ -60,6 +61,9 @@ render_width = 320
 render_height = 200
 render_center_width = render_width / 2
 render_center_height = render_height / 2
+
+ui_offset_x = 0
+ui_offset_y = render_height
 
 -- Misc stuff
 debug_number = 0 
@@ -203,8 +207,6 @@ function love.draw()
 	if map_toggle then
 		drawTopDownView()
 	end
-
-	love.graphics.print(debug_number, 0, 0)
 end
 
 function love.keypressed(key, scancode, isrepeat)
@@ -272,6 +274,12 @@ function drawMap()
 	-- to calculate the direction a single ray points to
 	local ray_angle = fixRadians(player_angle - (((pi / 180) * (field_of_view / ray_count)) * starting_degree_offset))
 	
+	local wall_layer = {}
+	local floor_layer = {}
+	local ceiling_layer = {}
+
+	io.write("-")
+
 	-- Ray initialization + 3d Drawing
 	for rays = 0, ray_count do 
 		-- vertical and horizontal level texture number
@@ -446,12 +454,19 @@ function drawMap()
 			point_y = horizontal_point_y
 			level_texture = hor_level_texture
 			distance = horizontal_distance
+		else 
+			point_x = player_x
+			point_y = player_y
+			level_texture = 0
+			distance = horizontal_distance
 		end
-		
+
 		-- Fixes fisheye
 		local cosine_angle = fixRadians(player_angle - ray_angle)
 		distance = distance * math.cos(cosine_angle)
 		
+
+
 		-- 3D WALL DRAWINGS
 		local line_height = (wall_height * render_height)/distance
 		
@@ -491,25 +506,27 @@ function drawMap()
 			if ray_angle > pi/2 and ray_angle < (3*pi)/2 then texture_x = 31 - texture_x end
 		end
 		
-		-- Resets the color before generating the strip
+		-- Resets the color before generating the strips
 		love.graphics.setColor(1,1,1,1)
 		
 		-- A list of points to draw the wall strips.
 		local wall_strip = {}
-		
-		-- TODO OPTIMIZE LATER HLY SHIT it sucks
-		for line_y = 0, line_height do
-			local r, g, b, a = textures_image:getPixel(math.floor(texture_x), math.floor(texture_y))
-			
-			wall_strip[line_y] = {starting_segment, line_offset + line_y, r * shade, g * shade, b * shade, a}
-			-- love.graphics.setColor(r * shade,g * shade,b * shade,a)
-			-- love.graphics.points(starting_segment,line_offset + line_y)
-			texture_y = texture_y + texture_y_step
-		end
-		
+
 		-- A list of points to draw the floor and ceiling strips
 		local floor_strip = {}
 		local ceiling_strip = {}
+		
+		-- TODO OPTIMIZE LATER HLY SHIT it sucks
+		for line_y = 0, line_height do
+			local r, g, b, a = 0,0,0,0
+
+			if depth[rays+1] > 0 then
+				r, g, b, a = textures_image:getPixel(math.floor(texture_x), math.floor(texture_y))
+			end
+
+			wall_strip[line_y + 1] = {starting_segment, line_offset + line_y, r * shade, g * shade, b * shade, a}
+			texture_y = texture_y + texture_y_step
+		end
 		
 		-- DRAW FLOORS
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
@@ -520,20 +537,21 @@ function drawMap()
 		
 		local floor_strip_index = 0
 		local ceiling_strip_index = 0
+		
 		for line_y = line_offset+line_height, render_height do
 			local ground_y = line_y - (render_height/2)
 			local r, g, b, a = 0, 0, 0, 1
-			local ground_texture_x = player_x + math.cos(ray_angle) * mysterynum * 30 / ground_y / fisheye_floor_fix
-			local ground_texture_y = player_y + math.sin(ray_angle) * mysterynum * 30 / ground_y / fisheye_floor_fix
+			local ground_texture_x = player_x + math.cos(ray_angle) * (mysterynum + debug_number) * 30 / ground_y / fisheye_floor_fix
+			local ground_texture_y = player_y + math.sin(ray_angle) * (mysterynum + debug_number) * 30 / ground_y / fisheye_floor_fix
 
 			-- Failsafe just in case it goes out of bounds
-			if ground_texture_x < 0 then ground_texture_x = 0 end
-			if ground_texture_y < 0 then ground_texture_y = 0 end
+			if ground_texture_x < 0 then ground_texture_x = math.abs() end
+			if ground_texture_y < 0 then ground_texture_y = ground_texture_y + 32 end
 			if ground_texture_x / 32 > level_x then ground_texture_x = level_x - 1 end
 			if ground_texture_y / 32 > level_y then ground_texture_y = level_y - 1 end
 			
 			local mp = level_floors[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32
-			if mp ~= nil then r, g, b, a = textures_image:getPixel(bitand(math.floor(ground_texture_x), 31), bitand(math.floor(ground_texture_y), 31) + mp)end
+			if mp ~= nil then r, g, b, a = textures_image:getPixel(bitand(math.floor(ground_texture_x), 30), bitand(math.floor(ground_texture_y), 31) + mp)end
 			
 			-- love.graphics.setColor(r * floor_shade,g * floor_shade,b * floor_shade,a)
 			-- love.graphics.points(starting_segment,line_y)
@@ -552,30 +570,34 @@ function drawMap()
 			end
 			
 		end
-		
+
 		-- Draws the map layer by layer
 		love.graphics.points(wall_strip)
 		love.graphics.points(floor_strip)
 		love.graphics.points(ceiling_strip)
 		
-		-- local player_center_w = render_width / 2
-		-- local player_center_h = render_height / 2
+		local player_center_w = render_width / 2
+		local player_center_h = render_height / 2
 		
 		-- Draws the rays in the 2D demonstration (weird bug happens when looking
 		-- at the left side of the screen.. The rays wont print...
-		-- if map_toggle then
-			-- love.graphics.setLineWidth(1)
-			-- love.graphics.line(player_center_w, player_center_h, point_x - player_x + (player_center_w), point_y - player_y + (player_center_h))
-		-- end
+		if map_toggle then
+			love.graphics.setLineWidth(1)
+			love.graphics.line(player_center_w, player_center_h, point_x - player_x + (player_center_w), point_y - player_y + (player_center_h))
+		end
 		
 			-- love.graphics.setLineWidth(1)
 		-- Recalculates the ray angle for another added ray to span the field of view.
 		ray_angle = fixRadians(ray_angle + ((pi / 180) * (field_of_view / ray_count)))
 	end
+
+	io.write("\n")
 end
 
 function drawSky() 
+
 	for y = 0, 119 do
+		local sky_strip = {}
 		for x = 0, 319 do
 			local meow = (-(player_angle / (2*pi)*4) * 320 - x)
 			
@@ -587,10 +609,12 @@ function drawSky()
 			
 			local r, g, b, a = sky_image:getPixel(meow, y)
 
-			love.graphics.setColor(r,g,b,a)
-			love.graphics.points(x,y + 1)
+			sky_strip[x] = {x,y,r,g,b,a}
 		end
+
+		love.graphics.points(sky_strip)
 	end
+
 end
 
 function drawTopDownView() 
@@ -640,7 +664,6 @@ function drawSprite()
 	sprite_x = (sprite_x * 215 / sprite_y)+(render_width/2)
 	sprite_y = (sprite_z * 215 / sprite_y)+(render_height/2)
 	
-	print(sprite_x)
 	local sprite_size = 16 
 	local scale = (sprite_size * render_height / b)
 	local sprite_texture_x = 0
@@ -661,8 +684,6 @@ function drawSprite()
 			sprite_y - y < render_height then
 				local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x * quality),math.floor(sprite_texture_y))
 				
-				-- love.graphics.setColor(r,g,b,a)
-				-- love.graphics.points(x, sprite_y - y)
 				sprite_strip[sprite_strip_index] = {x, sprite_y - y, r,g,b,a}
 				sprite_strip_index = sprite_strip_index + 1
 			end	
@@ -675,8 +696,6 @@ function drawSprite()
 		sprite_texture_x = sprite_texture_x + ((sprite_size)/ scale)
 	end
 	
-	
 	love.graphics.points(sprite_strip)
-	
 end
 
