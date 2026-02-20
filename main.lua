@@ -11,34 +11,42 @@
 
 
 -- Level properties
-				{1,0,0,0,1,0,1},
-level_walls = {	{0,0,1,2,1,0,0},
-				{0,0,0,0,0,0,0},
-				{0,0,0,0,1,0,0},
-				{0,0,4,0,0,0,0},
-				{1,1,1,0,0,0,0},
-				{1,0,4,0,0,0,1},
-				{1,1,1,0,3,0,0} }
+level_walls = {	{0,0,1,2,1,0,0,0,0,0},
+				{0,0,0,0,0,0,0,0,0,0},
+				{0,0,0,0,1,0,0,0,0,0},
+				{0,0,4,0,0,0,0,0,0,0},
+				{1,1,1,0,0,0,0,0,0,0},
+				{1,0,4,0,0,0,1,0,0,0},
+				{1,4,1,0,3,0,0,0,0,0},
+				{1,0,0,0,0,0,0,0,0,0},
+				{1,0,0,0,0,0,0,0,0,0},
+				{1,1,1,0,0,0,0,0,0,0} }
 				
-level_floors = {{1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1}}
+level_floors = {{1,1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1,1}}
 			
-level_ceilings = {{0,0,0,0,0,0,0},
-				{0,1,1,1,1,1,0},
-				{0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0},
-				{0,1,1,1,1,1,0},
-				{0,0,0,0,0,0,0} }
+level_ceilings = {{0,0,0,0,0,0,0,0,0,0},
+				{0,1,1,1,1,1,0,0,0,0},
+				{0,0,0,0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0,0,0,0},
+				{0,1,1,1,1,1,0,0,0,0},
+				{0,0,0,0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0,0,0,0} }
 			
 
-level_x = 7
-level_y = 7
+level_x = 10
+level_y = 10
 wall_height = 30
 cell_size = 32
 
@@ -144,15 +152,17 @@ function love.update(dt)
 	
 	if love.keyboard.isDown("up") or love.keyboard.isDown("w") then
 		-- Checks if the offsets are within the bounds
-		if gridpos_add_xoffset < level_x and gridpos_add_yoffset < level_y and gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 then
-			if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == 0 then
+		if gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 then
+			if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == nil or level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == 0 then
 				player_x = player_x + player_delta_x * (dt * speed)
 			end
-			if level_walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
+			
+			if level_walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == nil or level_walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
 				player_y = player_y + player_delta_y * (dt * speed)
 			end
 		end
 	end
+	
 	if love.keyboard.isDown("down") or love.keyboard.isDown("s") then
 		if gridpos_sub_xoffset < level_x and gridpos_sub_yoffset < level_y and gridpos_sub_xoffset > 0 and gridpos_sub_yoffset > 0 then
 			if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_sub_xoffset + 1)] == 0 then
@@ -207,6 +217,8 @@ function love.draw()
 	if map_toggle then
 		drawTopDownView()
 	end
+	
+	love.graphics.print(debug_number, ui_offset_x, ui_offset_y)
 end
 
 function love.keypressed(key, scancode, isrepeat)
@@ -541,20 +553,17 @@ function drawMap()
 		for line_y = line_offset+line_height, render_height do
 			local ground_y = line_y - (render_height/2)
 			local r, g, b, a = 0, 0, 0, 1
-			local ground_texture_x = player_x + math.cos(ray_angle) * (mysterynum + debug_number) * 30 / ground_y / fisheye_floor_fix
-			local ground_texture_y = player_y + math.sin(ray_angle) * (mysterynum + debug_number) * 30 / ground_y / fisheye_floor_fix
+			local ground_texture_x = (player_x + math.cos(ray_angle) * (mysterynum) * 32 / ground_y / fisheye_floor_fix) % 32
+			local ground_texture_y = (player_y + math.sin(ray_angle) * (mysterynum) * 32 / ground_y / fisheye_floor_fix) % 32
 
 			-- Failsafe just in case it goes out of bounds
-			if ground_texture_x < 0 then ground_texture_x = math.abs() end
-			if ground_texture_y < 0 then ground_texture_y = ground_texture_y + 32 end
+			if ground_texture_x < 0 then ground_texture_x = 0 end
+			if ground_texture_y < 0 then ground_texture_y = 0 end
 			if ground_texture_x / 32 > level_x then ground_texture_x = level_x - 1 end
 			if ground_texture_y / 32 > level_y then ground_texture_y = level_y - 1 end
 			
-			local mp = level_floors[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32
-			if mp ~= nil then r, g, b, a = textures_image:getPixel(bitand(math.floor(ground_texture_x), 30), bitand(math.floor(ground_texture_y), 31) + mp)end
-			
-			-- love.graphics.setColor(r * floor_shade,g * floor_shade,b * floor_shade,a)
-			-- love.graphics.points(starting_segment,line_y)
+			local mp = level_floors[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32 -- The multiplier shifts the textures to account for the multiple textures
+			if mp ~= nil then r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)end
 			
 			floor_strip[floor_strip_index] = {starting_segment,line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
 			floor_strip_index = floor_strip_index + 1
@@ -562,7 +571,7 @@ function drawMap()
 			mp = level_ceilings[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32
 			
 			if mp ~= nil and mp > 0 then
-				r, g, b, a = textures_image:getPixel(bitand(math.floor(ground_texture_x), 31), bitand(math.floor(ground_texture_y), 31) + mp)
+				r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)
 				-- love.graphics.setColor(r * floor_shade,g * floor_shade,b * floor_shade,a)
 				-- love.graphics.points(starting_segment,(render_height) - line_y)
 				ceiling_strip[ceiling_strip_index] = {starting_segment,(render_height) - line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
@@ -576,15 +585,15 @@ function drawMap()
 		love.graphics.points(floor_strip)
 		love.graphics.points(ceiling_strip)
 		
-		local player_center_w = render_width / 2
-		local player_center_h = render_height / 2
+		-- local player_center_w = render_width / 2
+		-- local player_center_h = render_height / 2
 		
-		-- Draws the rays in the 2D demonstration (weird bug happens when looking
-		-- at the left side of the screen.. The rays wont print...
-		if map_toggle then
-			love.graphics.setLineWidth(1)
-			love.graphics.line(player_center_w, player_center_h, point_x - player_x + (player_center_w), point_y - player_y + (player_center_h))
-		end
+		-- -- Draws the rays in the 2D demonstration (weird bug happens when looking
+		-- -- at the left side of the screen.. The rays wont print...
+		-- if map_toggle then
+			-- love.graphics.setLineWidth(1)
+			-- love.graphics.line(player_center_w, player_center_h, point_x - player_x + (player_center_w), point_y - player_y + (player_center_h))
+		-- end
 		
 			-- love.graphics.setLineWidth(1)
 		-- Recalculates the ray angle for another added ray to span the field of view.
@@ -684,7 +693,7 @@ function drawSprite()
 			sprite_y - y < render_height then
 				local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x * quality),math.floor(sprite_texture_y))
 				
-				sprite_strip[sprite_strip_index] = {x, sprite_y - y, r,g,b,a}
+				sprite_strip[sprite_strip_index] = {x - quality / 2, sprite_y - y, r,g,b,a}
 				sprite_strip_index = sprite_strip_index + 1
 			end	
 			sprite_texture_y = sprite_texture_y - (sprite_size / scale)
