@@ -1,4 +1,4 @@
--- Spaghettian Ratcity v0.1.2
+-- Spaghettian Ratcity v0.1.3
 
 -- Code written and documented by sushiwt 
 -- and based on the Raycaster tutorials by 3DSage :3
@@ -11,56 +11,53 @@
 
 
 -- Level properties
-level_walls = {	{0,0,1,2,1,0,0,0,0,0},
-				{0,0,0,0,0,0,0,0,0,0},
-				{0,0,0,0,1,0,0,0,0,0},
-				{0,0,4,0,0,0,0,0,0,0},
-				{1,1,1,0,0,0,0,0,0,0},
-				{1,0,4,0,0,0,1,0,0,0},
-				{1,4,1,0,3,0,0,0,0,0},
-				{1,0,0,0,0,0,0,0,0,0},
-				{1,0,0,0,0,0,0,0,0,0},
-				{1,1,1,0,0,0,0,0,0,0} }
+level_walls = {	{0,0,0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0,0,0},
+				{0,0,1,1,0,1,1,0,0},
+				{0,0,1,0,0,0,1,0,0},
+				{0,0,1,0,0,0,1,0,0},
+				{0,0,1,1,5,1,1,0,0},
+				{0,0,0,0,0,0,0,0,0}}
 				
-level_floors = {{1,1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1,1}}
+level_floors = {{1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1},
+				{1,1,1,1,1,1,1,1,1}}
 			
-level_ceilings = {{0,0,0,0,0,0,0,0,0,0},
-				{0,1,1,1,1,1,0,0,0,0},
-				{0,0,0,0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0,0,0,0},
-				{0,1,1,1,1,1,0,0,0,0},
-				{0,0,0,0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0,0,0,0} }
+level_ceilings ={{0,0,0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0,0,0},
+				{0,0,0,0,0,0,0,0,0},
+				{0,0,1,1,1,1,1,0,0},
+				{0,0,1,1,1,1,1,0,0},
+				{0,0,1,1,1,1,1,0,0},
+				{0,0,1,1,1,1,1,0,0},
+				{0,0,0,0,0,0,0,0,0}}
 			
 
-level_x = 10
-level_y = 10
+level_x = 9
+level_y = 9
 wall_height = 30
 cell_size = 32
 
-quality = 4 -- Calculates how wide each segment of the screen would be for the rays
+quality = 2 -- Calculates how wide each segment of the screen would be for the rays
 field_of_view = 75 -- The amount of area the player can see
 
 pi = math.pi
 
 -- Player properties
-player_x = 40
-player_y = 40
+player_x = 145
+player_y = 180
 player_delta_x = 0
 player_delta_y = 0
-player_angle = 2 * pi
+player_angle = pi / 2
 player_speed = 1
 map_toggle = false
 
@@ -69,6 +66,8 @@ render_width = 320
 render_height = 200
 render_center_width = render_width / 2
 render_center_height = render_height / 2
+
+fog = 0
 
 ui_offset_x = 0
 ui_offset_y = render_height
@@ -87,16 +86,70 @@ sprites = {}
 
 depth = {} -- Contains each rays distance value for sprite occlusion
 
+level = love.image.newImageData("levels/leveltest.png")
+level_array = {}
 
 function love.load(dt) 
 	player_delta_x = math.cos(player_angle) * player_speed
 	player_delta_y = math.sin(player_angle) * player_speed
-	love.mouse.setGrabbed(true)
-	love.mouse.setVisible(false)
+	-- love.mouse.setGrabbed(true)
+	-- love.mouse.setVisible(false)
 	
-	sprites[1] = createSprite(1, 1, 0, 64, 64, 8)
+	sprites[1] = createSprite(1, 1, 0, 112, 64, 8)
+	sprites[2] = createSprite(1, 1, 0, 144, 64, 8)
+	sprites[3] = createSprite(1, 1, 0, 176, 64, 8)
+	
+	if level ~= nil then
+		level_walls = {}
+		level_floors = {}
+		level_ceilings = {}
+		level_x, level_y = level:getDimensions()
+		player_x, player_y = 128,128
+		
+		for y = 0, level_y / 3 do
+			level_walls[y + 1] = {}
+			for x = 0, level_x - 1 do
+				local r, g, b, a = level:getPixel(x,y)
+				
+				if r > 0.5 then
+					table.insert(level_walls[y + 1], 1)
+				else
+					table.insert(level_walls[y + 1], 0)
+				end
+				
+			end
+		end
+		
+		for y = 0, level_y / 3 do
+			level_floors[y + 1] = {}
+			for x = 0, level_x - 1 do
+				local r = level:getPixel(x,y + level_y / 3)
+				
+				if r > 0 then
+					table.insert(level_floors[y + 1], 1)
+				else
+					table.insert(level_floors[y + 1], 0)
+				end
+			end
+		end
+		
+		for y = 0, level_y / 3 - 1 do
+			level_ceilings[y + 1] = {}
+			for x = 0, level_x - 1 do
+				print(x,y)
+				local r = level:getPixel(x, math.floor(y + (2*level_y / 3)))
+				
+				if r > 0 then
+					table.insert(level_ceilings[y + 1], 1)
+				else
+					table.insert(level_ceilings[y + 1], 0)
+				end
+			end
+		end
+		
+		level_y = math.floor(level_y / 3)
+	end
 end
-
 
 function love.update(dt)
 	-- Player Movement
@@ -130,7 +183,7 @@ function love.update(dt)
 	player_delta_x = math.cos(player_angle) * player_speed
 	player_delta_y = math.sin(player_angle) * player_speed
 	
-	love.mouse.setPosition(render_center_width,render_center_height)
+	-- love.mouse.setPosition(render_center_width,render_center_height)
 	
 	-- Player Transform
 	local player_boundary = 4
@@ -152,7 +205,7 @@ function love.update(dt)
 	
 	if love.keyboard.isDown("up") or love.keyboard.isDown("w") then
 		-- Checks if the offsets are within the bounds
-		if gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 then
+		if gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 and gridpos_add_xoffset < level_x and gridpos_add_yoffset < level_y  then
 			if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == nil or level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == 0 then
 				player_x = player_x + player_delta_x * (dt * speed)
 			end
@@ -200,9 +253,9 @@ function love.update(dt)
 	end
 	
 	-- Triggers
-	if math.floor(player_x / cell_size) == 1 and math.floor(player_y / cell_size) == 5 then
-		love.event.quit()
-	end
+	-- if math.floor(player_x / cell_size) == 1 and math.floor(player_y / cell_size) == 5 then
+		-- love.event.quit()
+	-- end
 	
 	fps = 1 / dt
 end
@@ -218,7 +271,7 @@ function love.draw()
 		drawTopDownView()
 	end
 	
-	love.graphics.print(debug_number, ui_offset_x, ui_offset_y)
+	love.graphics.print(math.floor(player_x) .. ", " .. math.floor(player_y), ui_offset_x, ui_offset_y)
 end
 
 function love.keypressed(key, scancode, isrepeat)
@@ -289,8 +342,6 @@ function drawMap()
 	local wall_layer = {}
 	local floor_layer = {}
 	local ceiling_layer = {}
-
-	io.write("-")
 
 	-- Ray initialization + 3d Drawing
 	for rays = 0, ray_count do 
@@ -528,6 +579,14 @@ function drawMap()
 		local floor_strip = {}
 		local ceiling_strip = {}
 		
+		local fog_walls = 0
+		if fog > 0 then
+			fog_walls = (distance / 60) - (0.1 * fog)
+			if fog_walls < 0 then
+				fog_walls = 0
+			end
+		end
+		
 		-- TODO OPTIMIZE LATER HLY SHIT it sucks
 		for line_y = 0, line_height do
 			local r, g, b, a = 0,0,0,0
@@ -536,7 +595,7 @@ function drawMap()
 				r, g, b, a = textures_image:getPixel(math.floor(texture_x), math.floor(texture_y))
 			end
 
-			wall_strip[line_y + 1] = {starting_segment, line_offset + line_y, r * shade, g * shade, b * shade, a}
+			wall_strip[line_y + 1] = {starting_segment, line_offset + line_y, r * shade - fog_walls, g * shade - fog_walls, b * shade - fog_walls, a}
 			texture_y = texture_y + texture_y_step
 		end
 		
@@ -553,14 +612,14 @@ function drawMap()
 		for line_y = line_offset+line_height, render_height do
 			local ground_y = line_y - (render_height/2)
 			local r, g, b, a = 0, 0, 0, 1
-			local ground_texture_x = (player_x + math.cos(ray_angle) * (mysterynum) * 32 / ground_y / fisheye_floor_fix) % 32
-			local ground_texture_y = (player_y + math.sin(ray_angle) * (mysterynum) * 32 / ground_y / fisheye_floor_fix) % 32
+			local ground_texture_x = (player_x + math.cos(ray_angle) * (mysterynum) * 32 / ground_y / fisheye_floor_fix) 
+			local ground_texture_y = (player_y + math.sin(ray_angle) * (mysterynum) * 32 / ground_y / fisheye_floor_fix) 
 
 			-- Failsafe just in case it goes out of bounds
-			if ground_texture_x < 0 then ground_texture_x = 0 end
-			if ground_texture_y < 0 then ground_texture_y = 0 end
-			if ground_texture_x / 32 > level_x then ground_texture_x = level_x - 1 end
-			if ground_texture_y / 32 > level_y then ground_texture_y = level_y - 1 end
+			if ground_texture_x < 0 then ground_texture_x = ground_texture_x % 32  end
+			if ground_texture_y < 0 then ground_texture_y = ground_texture_y % 32 end
+			if ground_texture_x / 32 > level_x then ground_texture_x = ground_texture_x % 32 end
+			if ground_texture_y / 32 > level_y then ground_texture_y = ground_texture_y % 32 end
 			
 			local mp = level_floors[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32 -- The multiplier shifts the textures to account for the multiple textures
 			if mp ~= nil then r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)end
@@ -600,7 +659,6 @@ function drawMap()
 		ray_angle = fixRadians(ray_angle + ((pi / 180) * (field_of_view / ray_count)))
 	end
 
-	io.write("\n")
 end
 
 function drawSky() 
@@ -658,53 +716,68 @@ function drawTopDownView()
 end
 
 function drawSprite() 
-	local sprite_x = sprites[1].x - player_x
-	local sprite_y = sprites[1].y - player_y
-	local sprite_z = sprites[1].z
-	
-	local CS = math.cos(player_angle)
-	local SS = -math.sin(player_angle)
-	
-	local a = sprite_y * CS + sprite_x * SS
-	local b = sprite_x * CS - sprite_y * SS
-	sprite_x = a
-	sprite_y = b
-	
-	sprite_x = (sprite_x * 215 / sprite_y)+(render_width/2)
-	sprite_y = (sprite_z * 215 / sprite_y)+(render_height/2)
-	
-	local sprite_size = 16 
-	local scale = (sprite_size * render_height / b)
-	local sprite_texture_x = 0
-	local sprite_texture_y = 16
-	
-	local sprite_strip = {}
-	local sprite_strip_index = 0
-	
-	for x = sprite_x - scale / 2, sprite_x + scale / 2, quality do
-		-- The third condition is a failsafe to not cause an out of bounds error,
-		-- but it refuses to draw the rest of the sprite because of it.
-		-- Fix it later
-		sprite_texture_y = 16
-		for y = 0, scale do
-			if sprite_x > 0 and sprite_x < render_width and 
-			depth[math.floor(x/quality) + 1] ~= nil and 
-			b > 0 and b < depth[math.floor(x/quality) + 1] and 
-			sprite_y - y < render_height then
-				local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x * quality),math.floor(sprite_texture_y))
-				
-				sprite_strip[sprite_strip_index] = {x - quality / 2, sprite_y - y, r,g,b,a}
-				sprite_strip_index = sprite_strip_index + 1
-			end	
-			sprite_texture_y = sprite_texture_y - (sprite_size / scale)
-			
-			if sprite_texture_y < 0 then
-				sprite_texture_y = 0
-			end
+	for index, value in ipairs(sprites) do
+		local sprite_x = sprites[index].x - player_x
+		local sprite_y = sprites[index].y - player_y
+		local sprite_z = sprites[index].z
+		
+		local CS = math.cos(player_angle)
+		local SS = -math.sin(player_angle)
+		
+		local a = sprite_y * CS + sprite_x * SS
+		local b = sprite_x * CS - sprite_y * SS
+		sprite_x = a
+		sprite_y = b
+		
+		if sprite_y < 0 then
+			return
 		end
-		sprite_texture_x = sprite_texture_x + ((sprite_size)/ scale)
+		
+		local epsilon = 0.0001
+		
+		sprite_x = (sprite_x * 215 / (sprite_y + epsilon))+(render_width/2)
+		sprite_y = (sprite_z * 215 / (sprite_y + epsilon))+(render_height/2)
+		
+		local sprite_size = 16 
+		local scale = (sprite_size * render_height / b)
+		local sprite_texture_x = 0
+		local sprite_texture_y = 16
+		
+		local sprite_quality = 0
+		
+		
+		if b < 25 then
+			sprite_quality = (1 / b) * 25
+		end
+		
+		
+		local sprite_strip = {}
+		local sprite_strip_index = 0
+		
+		for x = sprite_x - scale / 2, sprite_x + scale / 2, quality + sprite_quality do
+			-- The third condition is a failsafe to not cause an out of bounds error,
+			-- but it refuses to draw the rest of the sprite because of it.
+			-- Fix it later
+			sprite_texture_y = 16
+			for y = 0, scale do
+				if depth[math.floor(x/quality) + 1] ~= nil and 
+				b > 0 and b < depth[math.floor(x/quality) + 1] and 
+				sprite_y - y < render_height then
+					local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x * (quality + sprite_quality)),math.floor(sprite_texture_y))
+					
+					sprite_strip[sprite_strip_index] = {x - quality / 2, sprite_y - y, r,g,b,a}
+					sprite_strip_index = sprite_strip_index + 1
+				end	
+				sprite_texture_y = sprite_texture_y - (sprite_size / scale)
+				
+				if sprite_texture_y < 0 then
+					sprite_texture_y = 0
+				end
+			end
+			sprite_texture_x = sprite_texture_x + ((sprite_size)/ scale)
+		end
+		
+		love.graphics.points(sprite_strip)
 	end
-	
-	love.graphics.points(sprite_strip)
 end
 
