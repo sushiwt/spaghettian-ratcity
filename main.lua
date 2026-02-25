@@ -47,7 +47,7 @@ level_y = 9
 wall_height = 30
 cell_size = 32
 
-quality = 2 -- Calculates how wide each segment of the screen would be for the rays
+quality = 1 -- Calculates how wide each segment of the screen would be for the rays
 field_of_view = 75 -- The amount of area the player can see
 
 pi = math.pi
@@ -60,6 +60,7 @@ player_delta_y = 0
 player_angle = pi / 2
 player_speed = 1
 map_toggle = false
+mouse_controls = true
 
 -- Render settings
 render_width = 320
@@ -67,18 +68,18 @@ render_height = 200
 render_center_width = render_width / 2
 render_center_height = render_height / 2
 
-fog = 0
+fog = 1
 
 ui_offset_x = 0
 ui_offset_y = render_height
 
 -- Misc stuff
-debug_number = 0 
+debug_number = 1
 fps = 0
 
 -- Textures
 textures_image = love.image.newImageData("graphics/platform.png")
-sky_image = love.image.newImageData("graphics/sky.png")
+sky_image = love.image.newImageData("graphics/sky2.png")
 sprites_image = love.image.newImageData("graphics/smiley.png")
 
 speed = 50 -- I already have a player speed ill remove this eventually
@@ -86,69 +87,107 @@ sprites = {}
 
 depth = {} -- Contains each rays distance value for sprite occlusion
 
-level = love.image.newImageData("levels/leveltest.png")
+level = "house1"
 level_array = {}
 
 function love.load(dt) 
 	player_delta_x = math.cos(player_angle) * player_speed
 	player_delta_y = math.sin(player_angle) * player_speed
-	-- love.mouse.setGrabbed(true)
-	-- love.mouse.setVisible(false)
-	
-	sprites[1] = createSprite(1, 1, 0, 112, 64, 8)
-	sprites[2] = createSprite(1, 1, 0, 144, 64, 8)
-	sprites[3] = createSprite(1, 1, 0, 176, 64, 8)
-	
-	if level ~= nil then
-		level_walls = {}
-		level_floors = {}
-		level_ceilings = {}
-		level_x, level_y = level:getDimensions()
-		player_x, player_y = 128,128
-		
-		for y = 0, level_y / 3 do
-			level_walls[y + 1] = {}
-			for x = 0, level_x - 1 do
-				local r, g, b, a = level:getPixel(x,y)
-				
-				if r > 0.5 then
-					table.insert(level_walls[y + 1], 1)
-				else
-					table.insert(level_walls[y + 1], 0)
-				end
-				
-			end
-		end
-		
-		for y = 0, level_y / 3 do
-			level_floors[y + 1] = {}
-			for x = 0, level_x - 1 do
-				local r = level:getPixel(x,y + level_y / 3)
-				
-				if r > 0 then
-					table.insert(level_floors[y + 1], 1)
-				else
-					table.insert(level_floors[y + 1], 0)
-				end
-			end
-		end
-		
-		for y = 0, level_y / 3 - 1 do
-			level_ceilings[y + 1] = {}
-			for x = 0, level_x - 1 do
-				print(x,y)
-				local r = level:getPixel(x, math.floor(y + (2*level_y / 3)))
-				
-				if r > 0 then
-					table.insert(level_ceilings[y + 1], 1)
-				else
-					table.insert(level_ceilings[y + 1], 0)
-				end
-			end
-		end
-		
-		level_y = math.floor(level_y / 3)
+	if mouse_controls then
+		love.mouse.setGrabbed(true)
+		love.mouse.setVisible(false)
 	end
+	
+	-- sprites[1] = createSprite(1, 1, 0, 112, 64, 8)
+	-- sprites[2] = createSprite(1, 1, 0, 144, 64, 8)
+	-- sprites[3] = createSprite(1, 1, 0, 176, 64, 8)
+	
+	-- Load level if levels are available
+	if level ~= nil then
+		loadMap(level)
+	end
+end
+
+function loadMap(level)
+	-- .srl is just a plain text file. Wanted to be unique with my level file types lol
+	local level_string = "levels/house1.srl"
+
+	level_walls = {}
+	level_floors = {}
+	level_ceilings = {}
+
+	local file_section = 0
+	local level_layer = "none"
+	local insert_row = false
+
+	for line in love.filesystem.lines(level_string) do
+		local map_info = ""
+		local map_row = {}
+
+		for value in line:gmatch("[^,]+") do
+			if file_section == 0 then
+				if value == "changetomap" then
+					file_section = 1
+				elseif tonumber(value) then
+					if map_info == "lx" then
+						level_x = tonumber(value)
+					elseif map_info == "ly" then
+						level_y = tonumber(value)
+					elseif map_info == "px" then
+						player_x = tonumber(value)
+					elseif map_info == "py" then
+						player_y = tonumber(value)
+					end
+				else 
+					map_info = value
+				end
+			elseif file_section == 1 then
+				if tonumber(value) then
+					table.insert(map_row, tonumber(value) + 1)
+				elseif value == "." then
+					table.insert(map_row, 0)
+				else
+					level_layer = value
+					insert_row = false
+				end
+			end
+		end
+		print(dump(map_row))
+
+		if file_section == 1 then
+			if level_layer == "walls" and insert_row then
+				table.insert(level_walls, map_row)
+			elseif level_layer == "floors" and insert_row then
+				table.insert(level_floors, map_row)
+			elseif level_layer == "ceilings" and insert_row then
+				table.insert(level_ceilings, map_row)
+			end
+		end
+
+		insert_row = true
+	end
+	print(dump(level_walls))
+	print(dump(level_floors))
+	print(dump(level_ceilings))
+end
+
+-- "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\love\love.exe" --console "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\spaghettian-ratcity"
+
+-- Source - https://stackoverflow.com/a/27028488
+-- Posted by hookenz, modified by community. See post 'Timeline' for change history
+-- Retrieved 2026-02-25, License - CC BY-SA 4.0
+
+function dump(o)
+   if type(o) == 'table' then
+      local s = '{ '
+      for k,v in pairs(o) do
+         if type(k) ~= 'number' then k = '"'..k..'"' end
+         s = s .. dump(v) .. ','
+      end
+      return s .. '} '
+   else
+      return tostring(o)
+   end
 end
 
 function love.update(dt)
@@ -173,17 +212,20 @@ function love.update(dt)
 	end
 	
 	-- Mouse Turn
-	player_angle = player_angle + ((love.mouse.getX() - render_center_width) * 0.001) * (dt * speed)
-	if player_angle < 0 then
-		player_angle = player_angle + 2 * pi
-	end
-	if player_angle >= 2*pi then
-		player_angle = player_angle - 2 * pi
-	end
-	player_delta_x = math.cos(player_angle) * player_speed
-	player_delta_y = math.sin(player_angle) * player_speed
 	
-	-- love.mouse.setPosition(render_center_width,render_center_height)
+	if mouse_controls == true then
+		player_angle = player_angle + ((love.mouse.getX() - render_center_width) * 0.001) * (dt * speed)
+		if player_angle < 0 then
+			player_angle = player_angle + 2 * pi
+		end
+		if player_angle >= 2*pi then
+			player_angle = player_angle - 2 * pi
+		end
+		player_delta_x = math.cos(player_angle) * player_speed
+		player_delta_y = math.sin(player_angle) * player_speed
+		love.mouse.setPosition(render_center_width,render_center_height)
+	end
+	
 	
 	-- Player Transform
 	local player_boundary = 4
@@ -278,6 +320,13 @@ function love.keypressed(key, scancode, isrepeat)
    if key == "escape" then
       love.event.quit()
    end
+   if key == "u" then
+		if fog < 10 then
+			fog = fog + 1
+		else
+			fog = 0
+		end
+   end
    if key == "i" then
 		map_toggle = not map_toggle
    end
@@ -324,6 +373,62 @@ function createSprite(iType, iState, iMap, ix, iy, iz)
 		y = iy,
 		z = iz,
 	}
+end
+
+function loadImageMap(levelName) 
+	local levelData = love.image.newImageData("levels/" .. levelName .. ".png")
+
+	level_walls = {}
+	level_floors = {}
+	level_ceilings = {}
+	level_x, level_y = levelData:getDimensions()
+	player_x, player_y = level_x / 2 * cell_size, ((level_y / 3) / 2) * cell_size
+	
+	for y = 0, level_y / 3 do
+		level_walls[y + 1] = {}
+		for x = 0, level_x - 1 do
+			local r, g, b, a = levelData:getPixel(x,y)
+			
+			if g > 0.5 then
+				player_x, player_y = x * cell_size + (cell_size / 2), y * cell_size + (cell_size / 2)
+				table.insert(level_walls[y + 1], 0)
+			elseif r > 0.5 then
+				table.insert(level_walls[y + 1], 1)
+			else
+				table.insert(level_walls[y + 1], 0)
+			end
+			
+		end
+	end
+	
+	for y = 0, level_y / 3 do
+		level_floors[y + 1] = {}
+		for x = 0, level_x - 1 do
+			local r, g, b, a = levelData:getPixel(x,y + level_y / 3)
+			
+			if r > 0 then
+				table.insert(level_floors[y + 1], 1)
+			else
+				table.insert(level_floors[y + 1], 0)
+			end
+		end
+	end
+	
+	for y = 0, level_y / 3 - 1 do
+		level_ceilings[y + 1] = {}
+		for x = 0, level_x - 1 do
+			print(x,y)
+			local r = levelData:getPixel(x, math.floor(y + (2*level_y / 3)))
+			
+			if r > 0 then
+				table.insert(level_ceilings[y + 1], 1)
+			else
+				table.insert(level_ceilings[y + 1], 0)
+			end
+		end
+	end
+	
+	level_y = math.floor(level_y / 3)
 end
 
 -- Display Functions
@@ -392,7 +497,7 @@ function drawMap()
 		end
 		
 		-- Checks the intersections
-		while depth_of_field < 8 do
+		while depth_of_field < 16 do
 			-- Correlates the location the ray is currently intersecting with the array size.
 			cell_x = math.floor(point_x / cell_size) 
 			cell_y = math.floor(point_y / cell_size) 
@@ -465,7 +570,7 @@ function drawMap()
 		end
 		
 		-- Checks the intersections
-		while depth_of_field < 8 do
+		while depth_of_field < 16 do
 			-- Correlates the location the ray is currently intersecting with the array size.
 			cell_x = math.floor(point_x / cell_size) 
 			cell_y = math.floor(point_y / cell_size) 
@@ -581,7 +686,7 @@ function drawMap()
 		
 		local fog_walls = 0
 		if fog > 0 then
-			fog_walls = (distance / 60) - (0.1 * fog)
+			fog_walls = 1 - ((distance / 220) - (0.1 * fog))
 			if fog_walls < 0 then
 				fog_walls = 0
 			end
@@ -595,7 +700,7 @@ function drawMap()
 				r, g, b, a = textures_image:getPixel(math.floor(texture_x), math.floor(texture_y))
 			end
 
-			wall_strip[line_y + 1] = {starting_segment, line_offset + line_y, r * shade - fog_walls, g * shade - fog_walls, b * shade - fog_walls, a}
+			wall_strip[line_y + 1] = {starting_segment, line_offset + line_y, (r * fog_walls) * shade , (g * fog_walls) * shade, (b * fog_walls) * shade, a}
 			texture_y = texture_y + texture_y_step
 		end
 		
@@ -603,13 +708,13 @@ function drawMap()
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
 		-- spaced out from the walls.
 		local fisheye_floor_fix = math.cos(fixRadians(player_angle - ray_angle))
-		local mysterynum = 96 -- There's gotta be a better way to get 224 right..
+		local mysterynum = 94 -- There's gotta be a better way to get 224 right..
 		local floor_shade = 0.9
 		
 		local floor_strip_index = 0
 		local ceiling_strip_index = 0
 		
-		for line_y = line_offset+line_height, render_height do
+		for line_y = line_offset+line_height - 2, render_height do
 			local ground_y = line_y - (render_height/2)
 			local r, g, b, a = 0, 0, 0, 1
 			local ground_texture_x = (player_x + math.cos(ray_angle) * (mysterynum) * 32 / ground_y / fisheye_floor_fix) 
@@ -623,6 +728,8 @@ function drawMap()
 			
 			local mp = level_floors[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32 -- The multiplier shifts the textures to account for the multiple textures
 			if mp ~= nil then r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)end
+			
+			floor_shade = (line_y - render_center_height) * fog / render_height
 			
 			floor_strip[floor_strip_index] = {starting_segment,line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
 			floor_strip_index = floor_strip_index + 1
@@ -739,7 +846,7 @@ function drawSprite()
 		sprite_y = (sprite_z * 215 / (sprite_y + epsilon))+(render_height/2)
 		
 		local sprite_size = 16 
-		local scale = (sprite_size * render_height / b)
+		local scale = (sprite_size * render_height / (b + epsilon))
 		local sprite_texture_x = 0
 		local sprite_texture_y = 16
 		
@@ -747,7 +854,7 @@ function drawSprite()
 		
 		
 		if b < 25 then
-			sprite_quality = (1 / b) * 25
+			sprite_quality = (1 / (b + epsilon)) * 25
 		end
 		
 		
