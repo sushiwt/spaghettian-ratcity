@@ -125,6 +125,9 @@ function loadMap(level)
 		local map_row = {}
 
 		for value in line:gmatch("[^,]+") do
+			-- File section 0 checks the level information, like the level size and the player position
+			-- If it detects the text "changetomap" as its checking the level information, it changes
+			-- to File section 1, the map information checker.
 			if file_section == 0 then
 				if value == "changetomap" then
 					file_section = 1
@@ -142,6 +145,9 @@ function loadMap(level)
 					map_info = value
 				end
 			elseif file_section == 1 then
+				-- Checks if the value is a number or an empty space "." 
+				-- If both conditions aren't true, it assumes that a new layer 
+				-- is being set up. Might change this later. 
 				if tonumber(value) then
 					table.insert(map_row, tonumber(value) + 1)
 				elseif value == "." then
@@ -152,18 +158,28 @@ function loadMap(level)
 				end
 			end
 		end
-		print(dump(map_row))
 
-		if file_section == 1 then
-			if level_layer == "walls" and insert_row then
+		-- It only adds the walls if its in file section 1, the map information checker.
+		-- It adds walls to its designated level layer, but only if its able to with the 
+		-- insert row variable.
+		if file_section == 1 and insert_row then
+			if level_layer == "walls" then
 				table.insert(level_walls, map_row)
-			elseif level_layer == "floors" and insert_row then
+			elseif level_layer == "floors" then
 				table.insert(level_floors, map_row)
-			elseif level_layer == "ceilings" and insert_row then
+			elseif level_layer == "ceilings" then
 				table.insert(level_ceilings, map_row)
 			end
 		end
 
+		-- This is a failsafe to prevent empty rows from being added to 
+		-- the level contents. 
+		-- If a level layer's value recently changes, the insert_row boolean
+		-- changes to false, as the current line doesn't define any row data, so 
+		-- the map_row is empty. Because of that, insert_row aims to prevent the 
+		-- if statement above this from manipulating the actual level arrays 
+		-- before actually checking the next line, which does have the row data. 
+		-- I hated explaining this and I am going to fix it later.
 		insert_row = true
 	end
 	print(dump(level_walls))
@@ -172,7 +188,7 @@ function loadMap(level)
 end
 
 -- "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\love\love.exe" --console "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\spaghettian-ratcity"
-
+-- Debugging purposes :3 the dump function.
 -- Source - https://stackoverflow.com/a/27028488
 -- Posted by hookenz, modified by community. See post 'Timeline' for change history
 -- Retrieved 2026-02-25, License - CC BY-SA 4.0
