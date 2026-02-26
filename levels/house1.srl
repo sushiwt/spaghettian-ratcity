@@ -4,7 +4,7 @@ px, 80
 py, 80
 texture,house
 sky,sky2
-fog,0
+fog,2
 changetomap
 walls
 0,0,.,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0

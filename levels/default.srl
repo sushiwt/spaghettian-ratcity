@@ -2,9 +2,7 @@ lx, 9
 ly, 9
 px, 145
 py, 180
-texture,default
-sky,sky
-fog,0
+fog,1
 changetomap
 walls
 .,.,.,.,.,.,.,.,.

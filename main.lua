@@ -17,17 +17,17 @@ level_ceilings = {}
 			
 level_x = 0
 level_y = 0
-wall_height = 30
+wall_height = 60
 cell_size = 32
 
-quality = 1 -- Calculates how wide each segment of the screen would be for the rays
+quality = 4 -- Calculates how wide each segment of the screen would be for the rays
 field_of_view = 75 -- The amount of area the player can see
 
 pi = math.pi
 
 -- Player properties
-player_x = 145
-player_y = 180
+player_x = 64
+player_y = 64
 player_delta_x = 0
 player_delta_y = 0
 player_angle = pi / 2
@@ -40,9 +40,7 @@ render_width = 320
 render_height = 200
 render_center_width = render_width / 2
 render_center_height = render_height / 2
-
 fog = 0
-
 ui_offset_x = 0
 ui_offset_y = render_height
 
@@ -51,9 +49,9 @@ debug_number = 1
 fps = 0
 
 -- Textures
-textures_image = 0
-sky_image = 0
-sprites_image = 0
+textures_image = love.image.newImageData("graphics/defaulttexture.png")
+sky_image = love.image.newImageData("graphics/defaultsky.png")
+sprites_image = love.image.newImageData("graphics/smiley.png")
 
 speed = 50 -- I already have a player speed ill remove this eventually
 sprites = {}
@@ -61,7 +59,7 @@ sprites = {}
 depth = {} -- Contains each rays distance value for sprite occlusion
 
 -- Level initialization. 
-level = "houe1"
+level = "home"
 invalid_level = false
 
 function love.load(dt) 
@@ -72,9 +70,9 @@ function love.load(dt)
 		love.mouse.setVisible(false)
 	end
 	
-	-- sprites[1] = createSprite(1, 1, 0, 112, 64, 8)
-	-- sprites[2] = createSprite(1, 1, 0, 144, 64, 8)
-	-- sprites[3] = createSprite(1, 1, 0, 176, 64, 8)
+	sprites[1] = createSprite(1, 1, 0, 112, 64, 8)
+	sprites[2] = createSprite(1, 1, 0, 144, 64, 8)
+	sprites[3] = createSprite(1, 1, 0, 176, 64, 8)
 	
 	-- Load level if levels are available
 	if love.filesystem.getInfo("levels/" .. level .. ".srl") then
@@ -189,10 +187,11 @@ function love.update(dt)
 		debug_number = debug_number + 1
 	end
 	
+
 	-- Triggers
-	-- if math.floor(player_x / cell_size) == 1 and math.floor(player_y / cell_size) == 5 then
-		-- love.event.quit()
-	-- end
+	if math.floor(player_x / cell_size) == 1 and math.floor(player_y / cell_size) == 5 then
+		loadMap("house1")
+	end
 	
 	fps = 1 / dt
 end
@@ -209,6 +208,7 @@ function love.draw()
 	end
 	
 	love.graphics.print(math.floor(player_x) .. ", " .. math.floor(player_y), ui_offset_x, ui_offset_y)
+	print(debug_number)
 
 	if invalid_level then
 		love.graphics.setColor(0,0,0,0.75)
@@ -663,7 +663,8 @@ function drawMap()
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
 		-- spaced out from the walls.
 		local fisheye_floor_fix = math.cos(fixRadians(player_angle - ray_angle))
-		local mysterynum = 94 -- There's gotta be a better way to get 224 right..
+		local ooooomyst = (((2.22*(render_height/4.5) - 8.89))) / (0.333*(render_height * 2.75) - 1.33)
+		local mysterynum = ooooomyst
 		local floor_shade = 0.9
 		
 		local floor_strip_index = 0
