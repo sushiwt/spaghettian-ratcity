@@ -11,39 +11,12 @@
 
 
 -- Level properties
-level_walls = {	{0,0,0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0,0,0},
-				{0,0,1,1,0,1,1,0,0},
-				{0,0,1,0,0,0,1,0,0},
-				{0,0,1,0,0,0,1,0,0},
-				{0,0,1,1,5,1,1,0,0},
-				{0,0,0,0,0,0,0,0,0}}
-				
-level_floors = {{1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1},
-				{1,1,1,1,1,1,1,1,1}}
+level_walls = {}
+level_floors = {}
+level_ceilings = {}
 			
-level_ceilings ={{0,0,0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0,0,0},
-				{0,0,0,0,0,0,0,0,0},
-				{0,0,1,1,1,1,1,0,0},
-				{0,0,1,1,1,1,1,0,0},
-				{0,0,1,1,1,1,1,0,0},
-				{0,0,1,1,1,1,1,0,0},
-				{0,0,0,0,0,0,0,0,0}}
-			
-
-level_x = 9
-level_y = 9
+level_x = 0
+level_y = 0
 wall_height = 30
 cell_size = 32
 
@@ -78,9 +51,9 @@ debug_number = 1
 fps = 0
 
 -- Textures
-textures_image = love.image.newImageData("graphics/platformbeta.png")
-sky_image = love.image.newImageData("graphics/sky.png")
-sprites_image = love.image.newImageData("graphics/smiley.png")
+textures_image = 0
+sky_image = 0
+sprites_image = 0
 
 speed = 50 -- I already have a player speed ill remove this eventually
 sprites = {}
@@ -88,7 +61,8 @@ sprites = {}
 depth = {} -- Contains each rays distance value for sprite occlusion
 
 -- Level initialization. 
-level = "hose1"
+level = "houe1"
+invalid_level = false
 
 function love.load(dt) 
 	player_delta_x = math.cos(player_angle) * player_speed
@@ -105,112 +79,10 @@ function love.load(dt)
 	-- Load level if levels are available
 	if love.filesystem.getInfo("levels/" .. level .. ".srl") then
 		loadMap(level)
+	else
+		loadMap("default")
+		invalid_level = true
 	end
-end
-
-function loadMap(level)
-	-- .srl is just a plain text file. Wanted to be unique with my level file types lol
-	local level_path = "levels/" .. level .. ".srl"
-
-	level_walls = {}
-	level_floors = {}
-	level_ceilings = {}
-
-	local file_section = 0
-	local level_layer = "none"
-	local insert_row = false
-
-	for line in love.filesystem.lines(level_path) do
-		local map_info = ""
-		local map_row = {}
-
-		for value in line:gmatch("[^,]+") do
-			-- File section 0 checks the level information, like the level size and the player position
-			-- If it detects the text "changetomap" as its checking the level information, it changes
-			-- to File section 1, the map information checker.
-			if file_section == 0 then
-
-				if value == "changetomap" then
-					file_section = 1
-				end
-				
-				if map_info == "" then
-					map_info = value
-				else
-					if map_info == "lx" then
-						level_x = tonumber(value)
-					elseif map_info == "ly" then
-						level_y = tonumber(value)
-					elseif map_info == "px" then
-						player_x = tonumber(value)
-					elseif map_info == "py" then
-						player_y = tonumber(value)
-					elseif map_info == "texture" then
-						textures_image = love.image.newImageData("graphics/" .. value .. ".png")
-					elseif map_info == "sky" then
-						sky_image = love.image.newImageData("graphics/" .. value .. ".png")
-					elseif map_info == "fog" then
-						fog = tonumber(value)
-					end
-				end
-
-			elseif file_section == 1 then
-				-- Checks if the value is a number or an empty space "." 
-				-- If both conditions aren't true, it assumes that a new layer 
-				-- is being set up. Might change this later. 
-				if tonumber(value) then
-					table.insert(map_row, tonumber(value) + 1)
-				elseif value == "." then
-					table.insert(map_row, 0)
-				else
-					level_layer = value
-					insert_row = false
-				end
-			end
-		end
-
-		-- It only adds the walls if its in file section 1, the map information checker.
-		-- It adds walls to its designated level layer, but only if its able to with the 
-		-- insert row variable.
-		if file_section == 1 and insert_row then
-			if level_layer == "walls" then
-				table.insert(level_walls, map_row)
-			elseif level_layer == "floors" then
-				table.insert(level_floors, map_row)
-			elseif level_layer == "ceilings" then
-				table.insert(level_ceilings, map_row)
-			end
-		end
-
-		-- This is a failsafe to prevent empty rows from being added to 
-		-- the level contents. 
-		-- If a level layer's value recently changes, the insert_row boolean
-		-- changes to false, as the current line doesn't define any row data, so 
-		-- the map_row is empty. Because of that, insert_row aims to prevent the 
-		-- if statement above this from manipulating the actual level arrays 
-		-- before actually checking the next line, which does have the row data. 
-		-- I hated explaining this and I am going to fix it later.
-		insert_row = true
-	end
-end
-
--- "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\love\love.exe" --console "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\spaghettian-ratcity"
--- Debugging purposes :3 the dump function.
--- Source - https://stackoverflow.com/a/27028488
--- Posted by hookenz, modified by community. See post 'Timeline' for change history
--- Retrieved 2026-02-25, License - CC BY-SA 4.0
-
-function dump(o)
-   if type(o) == 'table' then
-      local s = '{ '
-      for k,v in pairs(o) do
-         if type(k) ~= 'number' then k = '"'..k..'"' end
-         s = s .. dump(v) .. ','
-      end
-      return s .. '} '
-   else
-      return tostring(o)
-   end
 end
 
 function love.update(dt)
@@ -337,6 +209,13 @@ function love.draw()
 	end
 	
 	love.graphics.print(math.floor(player_x) .. ", " .. math.floor(player_y), ui_offset_x, ui_offset_y)
+
+	if invalid_level then
+		love.graphics.setColor(0,0,0,0.75)
+		love.graphics.rectangle("fill", 0, 0, render_width, render_center_height - 28)
+		love.graphics.setColor(1,1,1)
+		love.graphics.print("If you're seeing this, the program tried \nto load a level that doesnt exist, " .. level .. ".srl,\nand it failed. \n\nCheck the levels/ directory.", 0, 0)
+	end
 end
 
 function love.keypressed(key, scancode, isrepeat)
@@ -355,6 +234,12 @@ function love.keypressed(key, scancode, isrepeat)
    end
 end
 
+-- "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\love\love.exe" --console "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\spaghettian-ratcity"
+-- Debugging purposes :3 the dump function.
+-- Source - https://stackoverflow.com/a/27028488
+-- Posted by hookenz, modified by community. See post 'Timeline' for change history
+-- Retrieved 2026-02-25, License - CC BY-SA 4.0
+
 -- Calculation Functions
 -- Copied from a stack overflow question :3
 -- https://stackoverflow.com/questions/32387117/bitwise-and-in-lua
@@ -371,6 +256,20 @@ function bitand(a, b)
         m = m / 2
     until m < 1
     return r
+end
+
+
+function dump(o)
+   if type(o) == 'table' then
+      local s = '{ '
+      for k,v in pairs(o) do
+         if type(k) ~= 'number' then k = '"'..k..'"' end
+         s = s .. dump(v) .. ','
+      end
+      return s .. '} '
+   else
+      return tostring(o)
+   end
 end
 
 -- Changes the radians to clamp it between 0 and 360 degrees
@@ -398,60 +297,91 @@ function createSprite(iType, iState, iMap, ix, iy, iz)
 	}
 end
 
-function loadImageMap(levelName) 
-	local levelData = love.image.newImageData("levels/" .. levelName .. ".png")
+
+function loadMap(level)
+	-- .srl is just a plain text file. Wanted to be unique with my level file types lol
+	local level_path = "levels/" .. level .. ".srl"
 
 	level_walls = {}
 	level_floors = {}
 	level_ceilings = {}
-	level_x, level_y = levelData:getDimensions()
-	player_x, player_y = level_x / 2 * cell_size, ((level_y / 3) / 2) * cell_size
-	
-	for y = 0, level_y / 3 do
-		level_walls[y + 1] = {}
-		for x = 0, level_x - 1 do
-			local r, g, b, a = levelData:getPixel(x,y)
-			
-			if g > 0.5 then
-				player_x, player_y = x * cell_size + (cell_size / 2), y * cell_size + (cell_size / 2)
-				table.insert(level_walls[y + 1], 0)
-			elseif r > 0.5 then
-				table.insert(level_walls[y + 1], 1)
-			else
-				table.insert(level_walls[y + 1], 0)
+
+	local file_section = 0
+	local level_layer = "none"
+	local insert_row = false
+
+	for line in love.filesystem.lines(level_path) do
+		local map_info = ""
+		local map_row = {}
+
+		for value in line:gmatch("[^,]+") do
+			-- File section 0 checks the level information, like the level size and the player position
+			-- If it detects the text "changetomap" as its checking the level information, it changes
+			-- to File section 1, the map information checker.
+			if file_section == 0 then
+
+				if value == "changetomap" then
+					file_section = 1
+				end
+				
+				if map_info == "" then
+					map_info = value
+				else
+					if map_info == "lx" then
+						level_x = tonumber(value)
+					elseif map_info == "ly" then
+						level_y = tonumber(value)
+					elseif map_info == "px" then
+						player_x = tonumber(value)
+					elseif map_info == "py" then
+						player_y = tonumber(value)
+					elseif map_info == "texture" then
+						textures_image = love.image.newImageData("graphics/" .. value .. ".png")
+					elseif map_info == "sky" then
+						sky_image = love.image.newImageData("graphics/" .. value .. ".png")
+					elseif map_info == "fog" then
+						fog = tonumber(value)
+					end
+				end
+
+			elseif file_section == 1 then
+				-- Checks if the value is a number or an empty space "." 
+				-- If both conditions aren't true, it assumes that a new layer 
+				-- is being set up. Might change this later. 
+				if tonumber(value) then
+					table.insert(map_row, tonumber(value) + 1)
+				elseif value == "." then
+					table.insert(map_row, 0)
+				else
+					level_layer = value
+					insert_row = false
+				end
 			end
-			
 		end
-	end
-	
-	for y = 0, level_y / 3 do
-		level_floors[y + 1] = {}
-		for x = 0, level_x - 1 do
-			local r, g, b, a = levelData:getPixel(x,y + level_y / 3)
-			
-			if r > 0 then
-				table.insert(level_floors[y + 1], 1)
-			else
-				table.insert(level_floors[y + 1], 0)
+
+		-- It only adds the walls if its in file section 1, the map information checker.
+		-- It adds walls to its designated level layer, but only if its able to with the 
+		-- insert row variable.
+		if file_section == 1 and insert_row then
+			if level_layer == "walls" then
+				table.insert(level_walls, map_row)
+			elseif level_layer == "floors" then
+				table.insert(level_floors, map_row)
+			elseif level_layer == "ceilings" then
+				table.insert(level_ceilings, map_row)
 			end
 		end
+
+		-- This is a failsafe to prevent empty rows from being added to 
+		-- the level contents. 
+		-- If a level layer's value recently changes, the insert_row boolean
+		-- changes to false, as the current line doesn't define any row data, so 
+		-- the map_row is empty. Because of that, insert_row aims to prevent the 
+		-- if statement above this from manipulating the actual level arrays 
+		-- before actually checking the next line, which does have the row data. 
+		-- I hated explaining this and I am going to fix it later.
+		insert_row = true
 	end
-	
-	for y = 0, level_y / 3 - 1 do
-		level_ceilings[y + 1] = {}
-		for x = 0, level_x - 1 do
-			print(x,y)
-			local r = levelData:getPixel(x, math.floor(y + (2*level_y / 3)))
-			
-			if r > 0 then
-				table.insert(level_ceilings[y + 1], 1)
-			else
-				table.insert(level_ceilings[y + 1], 0)
-			end
-		end
-	end
-	
-	level_y = math.floor(level_y / 3)
 end
 
 -- Display Functions
