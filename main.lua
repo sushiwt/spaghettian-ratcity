@@ -17,7 +17,7 @@ level_ceilings = {}
 			
 level_x = 0
 level_y = 0
-wall_height = 60
+wall_height = 30
 cell_size = 32
 
 quality = 4 -- Calculates how wide each segment of the screen would be for the rays
@@ -241,23 +241,6 @@ end
 -- Retrieved 2026-02-25, License - CC BY-SA 4.0
 
 -- Calculation Functions
--- Copied from a stack overflow question :3
--- https://stackoverflow.com/questions/32387117/bitwise-and-in-lua
--- Tbh i dont know what this code does but it WORKS so i am not
--- touchibg it...
-function bitand(a, b)
-    local r, m = 0, 2^31
-    repeat
-        local sa, sb = a % m, b % m
-        if sa >= m/2 and sb >= m/2 then
-            r = r + m/2
-        end
-        a, b = sa, sb
-        m = m / 2
-    until m < 1
-    return r
-end
-
 
 function dump(o)
    if type(o) == 'table' then
@@ -663,7 +646,7 @@ function drawMap()
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
 		-- spaced out from the walls.
 		local fisheye_floor_fix = math.cos(fixRadians(player_angle - ray_angle))
-		local ooooomyst = (((2.22*(render_height/4.5) - 8.89))) / (0.333*(render_height * 2.75) - 1.33)
+		local ooooomyst = 94
 		local mysterynum = ooooomyst
 		local floor_shade = 0.9
 		
@@ -811,12 +794,16 @@ function drawSprite()
 		local sprite_texture_y = 16
 		
 		local sprite_quality = 0
+		local sprite_shade = 1
 		
 		
 		if b < 25 then
 			sprite_quality = (1 / (b + epsilon)) * 25
 		end
 		
+		if fog > 0 then
+			sprite_shade = math.min(1 / (b + epsilon) * (fog * 25), 1)
+		end
 		
 		local sprite_strip = {}
 		local sprite_strip_index = 0
@@ -832,7 +819,7 @@ function drawSprite()
 				sprite_y - y < render_height then
 					local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x * (quality + sprite_quality)),math.floor(sprite_texture_y))
 					
-					sprite_strip[sprite_strip_index] = {x - quality / 2, sprite_y - y, r,g,b,a}
+					sprite_strip[sprite_strip_index] = {x - quality / 2, sprite_y - y, r * sprite_shade,g * sprite_shade,b * sprite_shade,a}
 					sprite_strip_index = sprite_strip_index + 1
 				end	
 				sprite_texture_y = sprite_texture_y - (sprite_size / scale)
