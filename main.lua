@@ -1,4 +1,4 @@
--- Spaghettian Ratcity v0.1.3
+-- Spaghettian Ratcity v0.1.4
 
 -- Code written and documented by sushiwt 
 -- and based on the Raycaster tutorials by 3DSage :3
@@ -68,7 +68,7 @@ render_height = 200
 render_center_width = render_width / 2
 render_center_height = render_height / 2
 
-fog = 1
+fog = 0
 
 ui_offset_x = 0
 ui_offset_y = render_height
@@ -78,8 +78,8 @@ debug_number = 1
 fps = 0
 
 -- Textures
-textures_image = love.image.newImageData("graphics/platform.png")
-sky_image = love.image.newImageData("graphics/sky2.png")
+textures_image = love.image.newImageData("graphics/platformbeta.png")
+sky_image = love.image.newImageData("graphics/sky.png")
 sprites_image = love.image.newImageData("graphics/smiley.png")
 
 speed = 50 -- I already have a player speed ill remove this eventually
@@ -87,8 +87,8 @@ sprites = {}
 
 depth = {} -- Contains each rays distance value for sprite occlusion
 
-level = "house1"
-level_array = {}
+-- Level initialization. 
+level = "hose1"
 
 function love.load(dt) 
 	player_delta_x = math.cos(player_angle) * player_speed
@@ -103,14 +103,14 @@ function love.load(dt)
 	-- sprites[3] = createSprite(1, 1, 0, 176, 64, 8)
 	
 	-- Load level if levels are available
-	if level ~= nil then
+	if love.filesystem.getInfo("levels/" .. level .. ".srl") then
 		loadMap(level)
 	end
 end
 
 function loadMap(level)
 	-- .srl is just a plain text file. Wanted to be unique with my level file types lol
-	local level_string = "levels/house1.srl"
+	local level_path = "levels/" .. level .. ".srl"
 
 	level_walls = {}
 	level_floors = {}
@@ -120,7 +120,7 @@ function loadMap(level)
 	local level_layer = "none"
 	local insert_row = false
 
-	for line in love.filesystem.lines(level_string) do
+	for line in love.filesystem.lines(level_path) do
 		local map_info = ""
 		local map_row = {}
 
@@ -129,9 +129,14 @@ function loadMap(level)
 			-- If it detects the text "changetomap" as its checking the level information, it changes
 			-- to File section 1, the map information checker.
 			if file_section == 0 then
+
 				if value == "changetomap" then
 					file_section = 1
-				elseif tonumber(value) then
+				end
+				
+				if map_info == "" then
+					map_info = value
+				else
 					if map_info == "lx" then
 						level_x = tonumber(value)
 					elseif map_info == "ly" then
@@ -140,10 +145,15 @@ function loadMap(level)
 						player_x = tonumber(value)
 					elseif map_info == "py" then
 						player_y = tonumber(value)
+					elseif map_info == "texture" then
+						textures_image = love.image.newImageData("graphics/" .. value .. ".png")
+					elseif map_info == "sky" then
+						sky_image = love.image.newImageData("graphics/" .. value .. ".png")
+					elseif map_info == "fog" then
+						fog = tonumber(value)
 					end
-				else 
-					map_info = value
 				end
+
 			elseif file_section == 1 then
 				-- Checks if the value is a number or an empty space "." 
 				-- If both conditions aren't true, it assumes that a new layer 
@@ -182,9 +192,6 @@ function loadMap(level)
 		-- I hated explaining this and I am going to fix it later.
 		insert_row = true
 	end
-	print(dump(level_walls))
-	print(dump(level_floors))
-	print(dump(level_ceilings))
 end
 
 -- "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\love\love.exe" --console "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\spaghettian-ratcity"
@@ -706,6 +713,8 @@ function drawMap()
 			if fog_walls < 0 then
 				fog_walls = 0
 			end
+		else 
+			fog_walls = 1
 		end
 		
 		-- TODO OPTIMIZE LATER HLY SHIT it sucks
@@ -745,7 +754,11 @@ function drawMap()
 			local mp = level_floors[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32 -- The multiplier shifts the textures to account for the multiple textures
 			if mp ~= nil then r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)end
 			
-			floor_shade = (line_y - render_center_height) * fog / render_height
+			if fog ~= 0 then
+				floor_shade = (line_y - render_center_height) * (fog * 2) / render_height
+			else
+				floor_shade = 0.9
+			end
 			
 			floor_strip[floor_strip_index] = {starting_segment,line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
 			floor_strip_index = floor_strip_index + 1
