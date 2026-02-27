@@ -45,7 +45,8 @@ ui_offset_x = 0
 ui_offset_y = render_height
 
 -- Misc stuff
-debug_number = 1
+debug_number = 0
+debug_number2 = 0
 fps = 0
 
 -- Textures
@@ -70,9 +71,9 @@ function love.load(dt)
 		love.mouse.setVisible(false)
 	end
 	
-	sprites[1] = createSprite(1, 1, 0, 112, 64, 8)
-	sprites[2] = createSprite(1, 1, 0, 144, 64, 8)
-	sprites[3] = createSprite(1, 1, 0, 176, 64, 8)
+	sprites[1] = createSprite(1, 1, 0, cell_size * 3.5, cell_size * 2, 8)
+	sprites[2] = createSprite(1, 1, 0, cell_size * 4.5, cell_size * 2, 8)
+	sprites[3] = createSprite(1, 1, 0, cell_size * 5.5, cell_size * 2, 8)
 	
 	-- Load level if levels are available
 	if love.filesystem.getInfo("levels/" .. level .. ".srl") then
@@ -187,6 +188,13 @@ function love.update(dt)
 		debug_number = debug_number + 1
 	end
 	
+	if love.keyboard.isDown("k") then
+		debug_number2 = debug_number2 - 1
+	end
+	if love.keyboard.isDown("l") then
+		debug_number2 = debug_number2 + 1
+	end
+	
 
 	-- Triggers
 	if math.floor(player_x / cell_size) == 1 and math.floor(player_y / cell_size) == 5 then
@@ -212,7 +220,7 @@ function love.draw()
 
 	if invalid_level then
 		love.graphics.setColor(0,0,0,0.75)
-		love.graphics.rectangle("fill", 0, 0, render_width, render_center_height - 28)
+		love.graphics.rectangle("fill", 0, 0, 256, 100)
 		love.graphics.setColor(1,1,1)
 		love.graphics.print("If you're seeing this, the program tried \nto load a level that doesnt exist, " .. level .. ".srl,\nand it failed. \n\nCheck the levels/ directory.", 0, 0)
 	end
@@ -569,8 +577,6 @@ function drawMap()
 		local cosine_angle = fixRadians(player_angle - ray_angle)
 		distance = distance * math.cos(cosine_angle)
 		
-
-
 		-- 3D WALL DRAWINGS
 		local line_height = (wall_height * render_height)/distance
 		
@@ -622,7 +628,7 @@ function drawMap()
 		
 		local fog_walls = 0
 		if fog > 0 then
-			fog_walls = 1 - ((distance / 220) - (0.1 * fog))
+			fog_walls = math.min(1 - ((distance / 220) - (0.1 * fog)), 1)
 			if fog_walls < 0 then
 				fog_walls = 0
 			end
@@ -641,12 +647,17 @@ function drawMap()
 			wall_strip[line_y + 1] = {starting_segment, line_offset + line_y, (r * fog_walls) * shade , (g * fog_walls) * shade, (b * fog_walls) * shade, a}
 			texture_y = texture_y + texture_y_step
 		end
+
+
+		wall_height = 30 + debug_number2
 		
 		-- DRAW FLOORS
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
 		-- spaced out from the walls.
 		local fisheye_floor_fix = math.cos(fixRadians(player_angle - ray_angle))
-		local ooooomyst = 94
+		local ooooomyst = (1.25 + ((0.6 / 100)*(render_height) - 1.2))*(wall_height*2.5) - 1 
+
+
 		local mysterynum = ooooomyst
 		local floor_shade = 0.9
 		
@@ -669,7 +680,7 @@ function drawMap()
 			if mp ~= nil then r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)end
 			
 			if fog ~= 0 then
-				floor_shade = (line_y - render_center_height) * (fog * 2) / render_height
+				floor_shade = math.min((line_y - render_center_height) * (fog * 2) / render_height, 1)
 			else
 				floor_shade = 0.9
 			end
@@ -785,8 +796,8 @@ function drawSprite()
 		
 		local epsilon = 0.0001
 		
-		sprite_x = (sprite_x * 215 / (sprite_y + epsilon))+(render_width/2)
-		sprite_y = (sprite_z * 215 / (sprite_y + epsilon))+(render_height/2)
+		sprite_x = (sprite_x * (render_width / 1.4) / (sprite_y + epsilon))+(render_width/2)
+		sprite_y = (sprite_z * (render_width / 1.4) / (sprite_y + epsilon))+(render_height/2)
 		
 		local sprite_size = 16 
 		local scale = (sprite_size * render_height / (b + epsilon))
