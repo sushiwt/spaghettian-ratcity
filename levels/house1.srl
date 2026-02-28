@@ -5,7 +5,7 @@ py, 80
 texture,house
 sky,sky2
 fog,2
-changetomap
+changetolevel
 walls
 0,0,.,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 0,.,.,.,0,.,.,.,.,.,0,0,.,.,.,.,.,0,0,0

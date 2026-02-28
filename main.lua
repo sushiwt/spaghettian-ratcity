@@ -32,12 +32,12 @@ player_delta_x = 0
 player_delta_y = 0
 player_angle = pi / 2
 player_speed = 1
-map_toggle = false
+level_toggle = false
 mouse_controls = true
 
 -- Render settings
-render_width = 320
-render_height = 200
+render_width = 640
+render_height = 400
 render_center_width = render_width / 2
 render_center_height = render_height / 2
 fog = 0
@@ -63,7 +63,83 @@ depth = {} -- Contains each rays distance value for sprite occlusion
 level = "home"
 invalid_level = false
 
+-- Game States
+game_state = 0
+
+-- Main Menus
+menu_option = 0
+
 function love.load(dt) 
+	if game_state == 1 then
+		initializeGame()
+	end
+end
+
+function love.update(dt)
+	if game_state == 1 then
+		updateGame(dt)
+	end
+end
+
+function love.draw()
+	if game_state == 0 then
+		love.graphics.print("Spaghettian Ratcity (Test Menu)", 0, 0)
+		love.graphics.print(">", 0, 32 + (menu_option * 16))
+		love.graphics.print("    Play" , 0, 32)
+		love.graphics.print("    Options" , 0, 48)
+		love.graphics.print("    Quit" , 0, 64)
+	elseif game_state == 1 then
+		drawGame()
+	elseif game_state == 2 then
+		love.graphics.print("You win! (Win Screen Test)", 0, 0)
+	elseif game_state == 3 then
+		love.graphics.print("You lose! (Lose Screen Test)", 0, 0)
+	end
+	
+end
+
+
+function love.keypressed(key, scancode, isrepeat)
+   	if key == "escape" then
+		love.mouse.setGrabbed(false)
+		love.mouse.setVisible(true)
+		game_state = 0
+
+  	end
+
+	if game_state == 0 then
+		if key == "down" and menu_option < 2 then
+			menu_option = menu_option + 1
+		elseif key == "up" and menu_option > 0 then
+			menu_option = menu_option - 1
+		elseif key == "z" then
+			if menu_option == 0 then
+				game_state = 1
+				initializeGame()
+			elseif menu_option == 2 then
+				love.event.quit()
+			end
+		end
+	elseif game_state == 1 then
+		if key == "u" then
+				if fog < 10 then
+					fog = fog + 1
+				else
+					fog = 0
+				end
+		end
+		if key == "i" then
+				level_toggle = not level_toggle
+		end
+		if key == "t" then
+				initializeGame()
+		end
+	end
+end
+
+-- Game Functions!! Yay!!
+
+function initializeGame()
 	player_delta_x = math.cos(player_angle) * player_speed
 	player_delta_y = math.sin(player_angle) * player_speed
 	if mouse_controls then
@@ -71,20 +147,20 @@ function love.load(dt)
 		love.mouse.setVisible(false)
 	end
 	
-	sprites[1] = createSprite(1, 1, 0, cell_size * 3.5, cell_size * 2, 8)
+	sprites[1] = createSprite(2, 1, 0, cell_size * 3.5, cell_size * 2, 8)
 	sprites[2] = createSprite(1, 1, 0, cell_size * 4.5, cell_size * 2, 8)
 	sprites[3] = createSprite(1, 1, 0, cell_size * 5.5, cell_size * 2, 8)
 	
 	-- Load level if levels are available
 	if love.filesystem.getInfo("levels/" .. level .. ".srl") then
-		loadMap(level)
+		loadLevel(level)
 	else
-		loadMap("default")
+		loadLevel("default")
 		invalid_level = true
 	end
 end
 
-function love.update(dt)
+function updateGame(dt)
 	-- Player Movement
 	
 	-- Keyboard Turn
@@ -198,20 +274,20 @@ function love.update(dt)
 
 	-- Triggers
 	if math.floor(player_x / cell_size) == 1 and math.floor(player_y / cell_size) == 5 then
-		loadMap("house1")
+		game_state = 2
 	end
 	
 	fps = 1 / dt
 end
 
-function love.draw()
+function drawGame()
 	love.graphics.setPointSize(quality)
 
 	drawSky()
-	drawMap()
+	drawLevel()
 	drawSprite()
 	
-	if map_toggle then
+	if level_toggle then
 		drawTopDownView()
 	end
 	
@@ -226,21 +302,6 @@ function love.draw()
 	end
 end
 
-function love.keypressed(key, scancode, isrepeat)
-   if key == "escape" then
-      love.event.quit()
-   end
-   if key == "u" then
-		if fog < 10 then
-			fog = fog + 1
-		else
-			fog = 0
-		end
-   end
-   if key == "i" then
-		map_toggle = not map_toggle
-   end
-end
 
 -- "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\love\love.exe" --console "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\spaghettian-ratcity"
 -- Debugging purposes :3 the dump function.
@@ -277,11 +338,11 @@ function fixRadians(ra)
 end
 
 -- Object Functions
-function createSprite(iType, iState, iMap, ix, iy, iz) 
+function createSprite(iType, iState, iLevel, ix, iy, iz) 
 	return {
 		type = iType,
 		state = iState,
-		map = iMap,
+		level = iLevel,
 		x = ix,
 		y = iy,
 		z = iz,
@@ -289,7 +350,7 @@ function createSprite(iType, iState, iMap, ix, iy, iz)
 end
 
 
-function loadMap(level)
+function loadLevel(level)
 	-- .srl is just a plain text file. Wanted to be unique with my level file types lol
 	local level_path = "levels/" .. level .. ".srl"
 
@@ -302,35 +363,35 @@ function loadMap(level)
 	local insert_row = false
 
 	for line in love.filesystem.lines(level_path) do
-		local map_info = ""
-		local map_row = {}
+		local level_info = ""
+		local level_row = {}
 
 		for value in line:gmatch("[^,]+") do
 			-- File section 0 checks the level information, like the level size and the player position
-			-- If it detects the text "changetomap" as its checking the level information, it changes
-			-- to File section 1, the map information checker.
+			-- If it detects the text "changetolevel" as its checking the level information, it changes
+			-- to File section 1, the level information checker.
 			if file_section == 0 then
 
-				if value == "changetomap" then
+				if value == "changetolevel" then
 					file_section = 1
 				end
 				
-				if map_info == "" then
-					map_info = value
+				if level_info == "" then
+					level_info = value
 				else
-					if map_info == "lx" then
+					if level_info == "lx" then
 						level_x = tonumber(value)
-					elseif map_info == "ly" then
+					elseif level_info == "ly" then
 						level_y = tonumber(value)
-					elseif map_info == "px" then
+					elseif level_info == "px" then
 						player_x = tonumber(value)
-					elseif map_info == "py" then
+					elseif level_info == "py" then
 						player_y = tonumber(value)
-					elseif map_info == "texture" then
+					elseif level_info == "texture" then
 						textures_image = love.image.newImageData("graphics/" .. value .. ".png")
-					elseif map_info == "sky" then
+					elseif level_info == "sky" then
 						sky_image = love.image.newImageData("graphics/" .. value .. ".png")
-					elseif map_info == "fog" then
+					elseif level_info == "fog" then
 						fog = tonumber(value)
 					end
 				end
@@ -340,9 +401,9 @@ function loadMap(level)
 				-- If both conditions aren't true, it assumes that a new layer 
 				-- is being set up. Might change this later. 
 				if tonumber(value) then
-					table.insert(map_row, tonumber(value) + 1)
+					table.insert(level_row, tonumber(value) + 1)
 				elseif value == "." then
-					table.insert(map_row, 0)
+					table.insert(level_row, 0)
 				else
 					level_layer = value
 					insert_row = false
@@ -350,16 +411,16 @@ function loadMap(level)
 			end
 		end
 
-		-- It only adds the walls if its in file section 1, the map information checker.
+		-- It only adds the walls if its in file section 1, the level information checker.
 		-- It adds walls to its designated level layer, but only if its able to with the 
 		-- insert row variable.
 		if file_section == 1 and insert_row then
 			if level_layer == "walls" then
-				table.insert(level_walls, map_row)
+				table.insert(level_walls, level_row)
 			elseif level_layer == "floors" then
-				table.insert(level_floors, map_row)
+				table.insert(level_floors, level_row)
 			elseif level_layer == "ceilings" then
-				table.insert(level_ceilings, map_row)
+				table.insert(level_ceilings, level_row)
 			end
 		end
 
@@ -367,7 +428,7 @@ function loadMap(level)
 		-- the level contents. 
 		-- If a level layer's value recently changes, the insert_row boolean
 		-- changes to false, as the current line doesn't define any row data, so 
-		-- the map_row is empty. Because of that, insert_row aims to prevent the 
+		-- the level_row is empty. Because of that, insert_row aims to prevent the 
 		-- if statement above this from manipulating the actual level arrays 
 		-- before actually checking the next line, which does have the row data. 
 		-- I hated explaining this and I am going to fix it later.
@@ -376,7 +437,7 @@ function loadMap(level)
 end
 
 -- Display Functions
-function drawMap()
+function drawLevel()
 	local point_x, point_y, point_x_offset, point_y_offset, depth_of_field
 	local distance = 0
 	
@@ -700,7 +761,7 @@ function drawMap()
 			
 		end
 
-		-- Draws the map layer by layer
+		-- Draws the level layer by layer
 		love.graphics.points(wall_strip)
 		love.graphics.points(floor_strip)
 		love.graphics.points(ceiling_strip)
@@ -710,7 +771,7 @@ function drawMap()
 		
 		-- -- Draws the rays in the 2D demonstration (weird bug happens when looking
 		-- -- at the left side of the screen.. The rays wont print...
-		-- if map_toggle then
+		-- if level_toggle then
 			-- love.graphics.setLineWidth(1)
 			-- love.graphics.line(player_center_w, player_center_h, point_x - player_x + (player_center_w), point_y - player_y + (player_center_h))
 		-- end
@@ -746,7 +807,7 @@ function drawSky()
 end
 
 function drawTopDownView() 
-	-- Draws the background of the map overlay
+	-- Draws the background of the level overlay
 	love.graphics.setColor(0,0,0, 0.75)
 	love.graphics.rectangle("fill", 0,0,render_width,render_height)
 
@@ -776,8 +837,35 @@ function drawTopDownView()
 	
 end
 
+
 function drawSprite() 
 	for index, value in ipairs(sprites) do
+		local bounds = 12
+
+		if sprites[index].type == 1 then
+			if sprites[index].state == 1 then
+				if player_x < sprites[index].x + bounds and
+					player_x > sprites[index].x - bounds and
+					player_y < sprites[index].y + bounds and
+					player_y > sprites[index].y - bounds then
+					sprites[index].state = 0
+				end
+			end
+		-- elseif sprites[index].type == 2 then
+		-- 	if sprites[index].x > player_x then
+		-- 		sprites[index].x = sprites[index].x - 1
+		-- 	end
+		-- 	if sprites[index].x < player_x then
+		-- 		sprites[index].x = sprites[index].x + 1
+		-- 	end
+		-- 	if sprites[index].y > player_y then
+		-- 		sprites[index].y = sprites[index].y - 1
+		-- 	end
+		-- 	if sprites[index].y < player_y then
+		-- 		sprites[index].y = sprites[index].y + 1
+		-- 	end
+		end
+
 		local sprite_x = sprites[index].x - player_x
 		local sprite_y = sprites[index].y - player_y
 		local sprite_z = sprites[index].z
@@ -790,11 +878,7 @@ function drawSprite()
 		sprite_x = a
 		sprite_y = b
 		
-		if sprite_y < 0 then
-			return
-		end
-		
-		local epsilon = 0.0001
+		local epsilon = 1
 		
 		sprite_x = (sprite_x * (render_width / 1.4) / (sprite_y + epsilon))+(render_width/2)
 		sprite_y = (sprite_z * (render_width / 1.4) / (sprite_y + epsilon))+(render_height/2)
@@ -826,8 +910,10 @@ function drawSprite()
 			sprite_texture_y = 16
 			for y = 0, scale do
 				if depth[math.floor(x/quality) + 1] ~= nil and 
-				b > 0 and b < depth[math.floor(x/quality) + 1] and 
-				sprite_y - y < render_height then
+				b > 10 and b < depth[math.floor(x/quality) + 1] and 
+				sprite_y - y < render_height and
+				sprites[index].state == 1
+				then
 					local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x * (quality + sprite_quality)),math.floor(sprite_texture_y))
 					
 					sprite_strip[sprite_strip_index] = {x - quality / 2, sprite_y - y, r * sprite_shade,g * sprite_shade,b * sprite_shade,a}

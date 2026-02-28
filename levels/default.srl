@@ -3,7 +3,7 @@ ly, 9
 px, 145
 py, 180
 fog,1
-changetomap
+changetolevel
 walls
 .,.,.,.,.,.,.,.,.
 .,.,.,.,.,.,.,.,.
