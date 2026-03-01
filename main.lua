@@ -35,24 +35,35 @@ player_speed = 1
 level_toggle = false
 mouse_controls = true
 
+max_hp = 100
+hp = 100
+
+-- Gun Settings
+player_shoot = false
+
+
 -- Render settings
 render_width = 640
-render_height = 400
+render_height = 480
 render_center_width = render_width / 2
 render_center_height = render_height / 2
 fog = 0
 ui_offset_x = 0
-ui_offset_y = render_height
+ui_offset_y = 400
 
 -- Misc stuff
 debug_number = 0
 debug_number2 = 0
 fps = 0
 
--- Textures
+-- Map Textures
 textures_image = love.image.newImageData("graphics/defaulttexture.png")
 sky_image = love.image.newImageData("graphics/defaultsky.png")
 sprites_image = love.image.newImageData("graphics/smiley.png")
+
+-- UI Textures
+shooter_image = love.graphics.newImage("graphics/lasershooter.png")
+healthbar_image = love.graphics.newImage("graphics/uibar.png")
 
 speed = 50 -- I already have a player speed ill remove this eventually
 sprites = {}
@@ -70,6 +81,8 @@ game_state = 0
 menu_option = 0
 
 function love.load(dt) 
+    shooter_image:setFilter("nearest", "nearest")
+    healthbar_image:setFilter("nearest", "nearest")
 	if game_state == 1 then
 		initializeGame()
 	end
@@ -137,8 +150,13 @@ function love.keypressed(key, scancode, isrepeat)
 	end
 end
 
--- Game Functions!! Yay!!
+function love.mousepressed(x, y, button, istouch)
+   if button == 1 then -- Versions prior to 0.10.0 use the MouseConstant 'l'
+      player_shoot = true
+   end
+end
 
+-- Game Functions!! Yay!!
 function initializeGame()
 	player_delta_x = math.cos(player_angle) * player_speed
 	player_delta_y = math.sin(player_angle) * player_speed
@@ -159,7 +177,6 @@ function initializeGame()
 		invalid_level = true
 	end
 end
-
 function updateGame(dt)
 	-- Player Movement
 	
@@ -279,7 +296,6 @@ function updateGame(dt)
 	
 	fps = 1 / dt
 end
-
 function drawGame()
 	love.graphics.setPointSize(quality)
 
@@ -287,9 +303,13 @@ function drawGame()
 	drawLevel()
 	drawSprite()
 	
+	love.graphics.draw(shooter_image, render_width - 180, render_height - 128, 0, 4)
+	love.graphics.draw(healthbar_image, 32, render_height - 128 , 0, 3)
+
 	if level_toggle then
 		drawTopDownView()
 	end
+
 	
 	love.graphics.print(math.floor(player_x) .. ", " .. math.floor(player_y), ui_offset_x, ui_offset_y)
 	print(debug_number)
@@ -842,30 +862,6 @@ function drawSprite()
 	for index, value in ipairs(sprites) do
 		local bounds = 12
 
-		if sprites[index].type == 1 then
-			if sprites[index].state == 1 then
-				if player_x < sprites[index].x + bounds and
-					player_x > sprites[index].x - bounds and
-					player_y < sprites[index].y + bounds and
-					player_y > sprites[index].y - bounds then
-					sprites[index].state = 0
-				end
-			end
-		-- elseif sprites[index].type == 2 then
-		-- 	if sprites[index].x > player_x then
-		-- 		sprites[index].x = sprites[index].x - 1
-		-- 	end
-		-- 	if sprites[index].x < player_x then
-		-- 		sprites[index].x = sprites[index].x + 1
-		-- 	end
-		-- 	if sprites[index].y > player_y then
-		-- 		sprites[index].y = sprites[index].y - 1
-		-- 	end
-		-- 	if sprites[index].y < player_y then
-		-- 		sprites[index].y = sprites[index].y + 1
-		-- 	end
-		end
-
 		local sprite_x = sprites[index].x - player_x
 		local sprite_y = sprites[index].y - player_y
 		local sprite_z = sprites[index].z
@@ -892,6 +888,37 @@ function drawSprite()
 		local sprite_shade = 1
 		
 		
+		if sprites[index].type == 1 then
+			if sprites[index].state == 1 then
+				if player_x < sprites[index].x + bounds and
+					player_x > sprites[index].x - bounds and
+					player_y < sprites[index].y + bounds and
+					player_y > sprites[index].y - bounds then
+					sprites[index].state = 0
+				end
+			end
+		elseif sprites[index].type == 2 then
+			if sprites[index].state == 1 then
+				if sprites[index].x > player_x then
+					sprites[index].x = sprites[index].x - 1
+				end
+				if sprites[index].x < player_x then
+					sprites[index].x = sprites[index].x + 1
+				end
+				if sprites[index].y > player_y then
+					sprites[index].y = sprites[index].y - 1
+				end
+				if sprites[index].y < player_y then
+					sprites[index].y = sprites[index].y + 1
+				end
+			end
+
+			if player_shoot and sprite_x > render_center_width - 20 and sprite_x < render_center_width + 20 then
+				sprites[index].state = 0
+			end
+			player_shoot = false
+		end
+
 		if b < 25 then
 			sprite_quality = (1 / (b + epsilon)) * 25
 		end
