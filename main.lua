@@ -9,6 +9,7 @@
 
 -- made by sushiwt, 15-02-2026
 
+-- meow :3
 
 -- Level properties
 level_walls = {}
