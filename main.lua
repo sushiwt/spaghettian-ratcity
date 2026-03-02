@@ -1,4 +1,4 @@
--- Spaghettian Ratcity v0.1.4
+-- Spaghettian Ratcity v0.1.5
 
 -- Code written and documented by sushiwt 
 -- and based on the Raycaster tutorials by 3DSage :3
@@ -22,7 +22,8 @@ cell_size = 32
 
 quality = 8 -- Calculates how wide each segment of the screen would be for the rays
 field_of_view = 75 -- The amount of area the player can see
-
+    
+-- Math Lookups
 pi = math.pi
 
 -- Player properties
@@ -66,6 +67,7 @@ sprites_image = love.image.newImageData("graphics/smiley.png")
 -- UI Textures
 shooter_image = love.graphics.newImage("graphics/lasershooter.png")
 healthbar_image = love.graphics.newImage("graphics/uibar.png")
+crosshair_image = love.graphics.newImage("graphics/crosshair.png")
 
 speed = 50 -- I already have a player speed ill remove this eventually
 sprites = {}
@@ -100,6 +102,7 @@ function love.update(dt)
 
 end
 
+-- For drawing the fps graph...
 fps_graph = {0,0}
 fps_point = 0
 
@@ -194,7 +197,7 @@ function initializeGame()
 	end
 	
 	sprites[1] = createSprite(2, 1, 0, cell_size * 3.5, cell_size * 2, 8)
-	sprites[2] = createSprite(1, 1, 0, cell_size * 4.5, cell_size * 2, 8)
+	sprites[2] = createSprite(1, 1, 1, cell_size * 4.5, cell_size * 2, 8)
 	sprites[3] = createSprite(1, 1, 0, cell_size * 5.5, cell_size * 2, 8)
 	
 	-- Load level if levels are available
@@ -262,30 +265,30 @@ function updateGame(dt)
 	
 	if love.keyboard.isDown("up") or love.keyboard.isDown("w") then
 		-- Checks if the offsets are within the bounds
-		-- if gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 and gridpos_add_xoffset < level_x and gridpos_add_yoffset < level_y  then
-		-- 	if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == nil or level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == 0 then
-		-- 		player_x = player_x + player_delta_x * (dt * speed)
-		-- 	end
+		if gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 and gridpos_add_xoffset < level_x and gridpos_add_yoffset < level_y  then
+			if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == nil or level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == 0 then
+				player_x = player_x + player_delta_x * (dt * speed)
+			end
 			
-		-- 	if level_walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == nil or level_walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
-		-- 		player_y = player_y + player_delta_y * (dt * speed)
-		-- 	end
-		-- end
-		player_x = player_x + player_delta_x * (dt * speed)
-		player_y = player_y + player_delta_y * (dt * speed)
+			if level_walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == nil or level_walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
+				player_y = player_y + player_delta_y * (dt * speed)
+			end
+		end
+		-- player_x = player_x + player_delta_x * (dt * speed)
+		-- player_y = player_y + player_delta_y * (dt * speed)
 	end
 	
 	if love.keyboard.isDown("down") or love.keyboard.isDown("s") then
-		-- if gridpos_sub_xoffset < level_x and gridpos_sub_yoffset < level_y and gridpos_sub_xoffset > 0 and gridpos_sub_yoffset > 0 then
-		-- 	if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_sub_xoffset + 1)] == 0 then
-		-- 		player_x = player_x - player_delta_x * (dt * speed)
-		-- 	end
-		-- 	if level_walls[math.floor(gridpos_sub_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
-		-- 		player_y = player_y - player_delta_y * (dt * speed)
-		-- 	end
-		-- end
-		player_x = player_x - player_delta_x * (dt * speed)
-		player_y = player_y - player_delta_y * (dt * speed)
+		if gridpos_sub_xoffset < level_x and gridpos_sub_yoffset < level_y and gridpos_sub_xoffset > 0 and gridpos_sub_yoffset > 0 then
+			if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_sub_xoffset + 1)] == 0 then
+				player_x = player_x - player_delta_x * (dt * speed)
+			end
+			if level_walls[math.floor(gridpos_sub_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
+				player_y = player_y - player_delta_y * (dt * speed)
+			end
+		end
+		-- player_x = player_x - player_delta_x * (dt * speed)
+		-- player_y = player_y - player_delta_y * (dt * speed)
 	end
 	
 	
@@ -336,8 +339,9 @@ function drawGame()
 	drawLevel()
 	--drawSprite()
 	
-	love.graphics.draw(shooter_image, render_width - 180, render_height - 128, 0, 4)
+	love.graphics.draw(shooter_image, render_width - 180, render_height - 128,  0, 4)
 	love.graphics.draw(healthbar_image, 32, render_height - 128 , 0, 3)
+	love.graphics.draw(crosshair_image, render_center_width - 15, render_center_height - 15)
 
 	if level_toggle then
 		drawTopDownView()
@@ -391,11 +395,11 @@ function fixRadians(ra)
 end
 
 -- Object Functions
-function createSprite(iType, iState, iLevel, ix, iy, iz) 
+function createSprite(iType, iState, iTexture, ix, iy, iz) 
 	return {
 		type = iType,
 		state = iState,
-		level = iLevel,
+		texture = iTexture,
 		x = ix,
 		y = iy,
 		z = iz,
@@ -970,7 +974,7 @@ function drawSprite()
 				sprite_y - y < render_height and
 				sprites[index].state == 1
 				then
-					local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x * (quality + sprite_quality)),math.floor(sprite_texture_y))
+					local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x * (quality + sprite_quality)),math.floor(sprite_texture_y) + (sprites[index].texture * sprite_size))
 					
 					sprite_strip[sprite_strip_index] = {x - quality / 2, sprite_y - y, r * sprite_shade,g * sprite_shade,b * sprite_shade,a}
 					sprite_strip_index = sprite_strip_index + 1
