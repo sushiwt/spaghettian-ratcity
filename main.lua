@@ -20,7 +20,7 @@ level_y = 0
 wall_height = 30
 cell_size = 32
 
-quality = 4 -- Calculates how wide each segment of the screen would be for the rays
+quality = 8 -- Calculates how wide each segment of the screen would be for the rays
 field_of_view = 75 -- The amount of area the player can see
 
 pi = math.pi
@@ -47,6 +47,7 @@ render_width = 640
 render_height = 480
 render_center_width = render_width / 2
 render_center_height = render_height / 2
+depth_of_field_value = 16
 fog = 0
 ui_offset_x = 0
 ui_offset_y = 400
@@ -55,6 +56,7 @@ ui_offset_y = 400
 debug_number = 0
 debug_number2 = 0
 fps = 0
+delta_time = 0
 
 -- Map Textures
 textures_image = love.image.newImageData("graphics/defaulttexture.png")
@@ -71,11 +73,11 @@ sprites = {}
 depth = {} -- Contains each rays distance value for sprite occlusion
 
 -- Level initialization. 
-level = "home"
+level = "house1"
 invalid_level = false
 
 -- Game States
-game_state = 0
+game_state = 1
 
 -- Main Menus
 menu_option = 0
@@ -92,7 +94,14 @@ function love.update(dt)
 	if game_state == 1 then
 		updateGame(dt)
 	end
+
+	fps = 1 / dt
+	delta_time = dt
+
 end
+
+fps_graph = {0,0}
+fps_point = 0
 
 function love.draw()
 	if game_state == 0 then
@@ -109,6 +118,25 @@ function love.draw()
 		love.graphics.print("You lose! (Lose Screen Test)", 0, 0)
 	end
 	
+	love.graphics.setLineWidth(1)
+	showFpsGraph(16,128,240, 128)
+end
+
+function showFpsGraph(x,y, graph_width, graph_height) 
+	table.insert(fps_graph, x + fps_point)
+	table.insert(fps_graph, y + (graph_height - fps))
+	fps_point = fps_point + (delta_time * 100)
+
+	if fps_point > graph_width then
+		fps_point = 0
+		fps_graph = {0,0,0,0}
+	end
+
+	love.graphics.setColor(0,0,0,0.5)
+	love.graphics.rectangle("fill", x, y, graph_width, graph_height)
+	love.graphics.setColor(1,1,1)
+	love.graphics.print(fps, x, y)
+	love.graphics.line(fps_graph)
 end
 
 
@@ -234,26 +262,30 @@ function updateGame(dt)
 	
 	if love.keyboard.isDown("up") or love.keyboard.isDown("w") then
 		-- Checks if the offsets are within the bounds
-		if gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 and gridpos_add_xoffset < level_x and gridpos_add_yoffset < level_y  then
-			if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == nil or level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == 0 then
-				player_x = player_x + player_delta_x * (dt * speed)
-			end
+		-- if gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 and gridpos_add_xoffset < level_x and gridpos_add_yoffset < level_y  then
+		-- 	if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == nil or level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == 0 then
+		-- 		player_x = player_x + player_delta_x * (dt * speed)
+		-- 	end
 			
-			if level_walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == nil or level_walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
-				player_y = player_y + player_delta_y * (dt * speed)
-			end
-		end
+		-- 	if level_walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == nil or level_walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
+		-- 		player_y = player_y + player_delta_y * (dt * speed)
+		-- 	end
+		-- end
+		player_x = player_x + player_delta_x * (dt * speed)
+		player_y = player_y + player_delta_y * (dt * speed)
 	end
 	
 	if love.keyboard.isDown("down") or love.keyboard.isDown("s") then
-		if gridpos_sub_xoffset < level_x and gridpos_sub_yoffset < level_y and gridpos_sub_xoffset > 0 and gridpos_sub_yoffset > 0 then
-			if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_sub_xoffset + 1)] == 0 then
-				player_x = player_x - player_delta_x * (dt * speed)
-			end
-			if level_walls[math.floor(gridpos_sub_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
-				player_y = player_y - player_delta_y * (dt * speed)
-			end
-		end
+		-- if gridpos_sub_xoffset < level_x and gridpos_sub_yoffset < level_y and gridpos_sub_xoffset > 0 and gridpos_sub_yoffset > 0 then
+		-- 	if level_walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_sub_xoffset + 1)] == 0 then
+		-- 		player_x = player_x - player_delta_x * (dt * speed)
+		-- 	end
+		-- 	if level_walls[math.floor(gridpos_sub_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
+		-- 		player_y = player_y - player_delta_y * (dt * speed)
+		-- 	end
+		-- end
+		player_x = player_x - player_delta_x * (dt * speed)
+		player_y = player_y - player_delta_y * (dt * speed)
 	end
 	
 	
@@ -296,12 +328,13 @@ function updateGame(dt)
 	
 	fps = 1 / dt
 end
+
 function drawGame()
 	love.graphics.setPointSize(quality)
 
-	drawSky()
+	-- drawSky()
 	drawLevel()
-	drawSprite()
+	--drawSprite()
 	
 	love.graphics.draw(shooter_image, render_width - 180, render_height - 128, 0, 4)
 	love.graphics.draw(healthbar_image, 32, render_height - 128 , 0, 3)
@@ -518,11 +551,11 @@ function drawLevel()
 			-- so default the point to the player and refuse checking for intersections.
 			point_x = player_x
 			point_y = player_y
-			depth_of_field = 8
+			depth_of_field = depth_of_field_value
 		end
 		
 		-- Checks the intersections
-		while depth_of_field < 16 do
+		while depth_of_field < depth_of_field_value do
 			-- Correlates the location the ray is currently intersecting with the array size.
 			cell_x = math.floor(point_x / cell_size) 
 			cell_y = math.floor(point_y / cell_size) 
@@ -591,11 +624,11 @@ function drawLevel()
 			-- so default the point to the player and refuse checking for intersections.
 			point_x = player_x
 			point_y = player_y
-			depth_of_field = 8
+			depth_of_field = depth_of_field_value
 		end
 		
 		-- Checks the intersections
-		while depth_of_field < 16 do
+		while depth_of_field < depth_of_field_value do
 			-- Correlates the location the ray is currently intersecting with the array size.
 			cell_x = math.floor(point_x / cell_size) 
 			cell_y = math.floor(point_y / cell_size) 
@@ -729,17 +762,15 @@ function drawLevel()
 			texture_y = texture_y + texture_y_step
 		end
 
-
 		wall_height = 30 + debug_number2
 		
+		love.graphics.points(wall_strip)
+
 		-- DRAW FLOORS
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
 		-- spaced out from the walls.
 		local fisheye_floor_fix = math.cos(fixRadians(player_angle - ray_angle))
-		local ooooomyst = (1.25 + ((0.6 / 100)*(render_height) - 1.2))*(wall_height*2.5) - 1 
-
-
-		local mysterynum = ooooomyst
+		local floor_ceiling_offset = (1.25 + ((0.006)*(render_height) - 1.2))*(wall_height*2.5) - 1 
 		local floor_shade = 0.9
 		
 		local floor_strip_index = 0
@@ -748,8 +779,8 @@ function drawLevel()
 		for line_y = line_offset+line_height - 2, render_height do
 			local ground_y = line_y - (render_height/2)
 			local r, g, b, a = 0, 0, 0, 1
-			local ground_texture_x = (player_x + math.cos(ray_angle) * (mysterynum) * 32 / ground_y / fisheye_floor_fix) 
-			local ground_texture_y = (player_y + math.sin(ray_angle) * (mysterynum) * 32 / ground_y / fisheye_floor_fix) 
+			local ground_texture_x = (player_x + math.cos(ray_angle) * (floor_ceiling_offset) * 32 / ground_y / fisheye_floor_fix) 
+			local ground_texture_y = (player_y + math.sin(ray_angle) * (floor_ceiling_offset) * 32 / ground_y / fisheye_floor_fix) 
 
 			-- Failsafe just in case it goes out of bounds
 			if ground_texture_x < 0 then ground_texture_x = ground_texture_x % 32  end
@@ -782,7 +813,6 @@ function drawLevel()
 		end
 
 		-- Draws the level layer by layer
-		love.graphics.points(wall_strip)
 		love.graphics.points(floor_strip)
 		love.graphics.points(ceiling_strip)
 		
@@ -804,25 +834,24 @@ function drawLevel()
 end
 
 function drawSky() 
-
-	for y = 0, 119 do
-		local sky_strip = {}
-		for x = 0, 319 do
-			local meow = (-(player_angle / (2*pi)*4) * 320 - x)
+	-- for y = 0, 119 do
+	-- 	local sky_strip = {}
+	-- 	for x = 0, 319 do
+	-- 		local meow = (-(player_angle / (2*pi)*4) * 320 - x)
 			
-			if meow < 0 then
-				meow = meow + 320
-			end
+	-- 		if meow < 0 then
+	-- 			meow = meow + 320
+	-- 		end
 			
-			meow = meow % 640
+	-- 		meow = meow % 640
 			
-			local r, g, b, a = sky_image:getPixel(meow, y)
+	-- 		local r, g, b, a = sky_image:getPixel(meow, y)
 
-			sky_strip[x] = {x,y,r,g,b,a}
-		end
+	-- 		sky_strip[x] = {x,y,r,g,b,a}
+	-- 	end
 
-		love.graphics.points(sky_strip)
-	end
+	-- 	love.graphics.points(sky_strip)
+	-- end
 
 end
 
@@ -874,7 +903,7 @@ function drawSprite()
 		sprite_x = a
 		sprite_y = b
 		
-		local epsilon = 1
+		local epsilon = 0.1
 		
 		sprite_x = (sprite_x * (render_width / 1.4) / (sprite_y + epsilon))+(render_width/2)
 		sprite_y = (sprite_z * (render_width / 1.4) / (sprite_y + epsilon))+(render_height/2)
