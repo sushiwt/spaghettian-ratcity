@@ -43,7 +43,6 @@ hp = 100
 -- Gun Settings
 player_shoot = false
 
-
 -- Render settings
 render_width = 640
 render_height = 480
@@ -85,6 +84,11 @@ game_state = 1
 -- Main Menus
 menu_option = 0
 
+-- For drawing the fps graph...
+fps_graph = {0,0}
+fps_point = 0
+
+-- Love2D Functions
 function love.load(dt) 
     shooter_image:setFilter("nearest", "nearest")
     healthbar_image:setFilter("nearest", "nearest")
@@ -92,7 +96,6 @@ function love.load(dt)
 		initializeGame()
 	end
 end
-
 function love.update(dt)
 	if game_state == 1 then
 		updateGame(dt)
@@ -102,11 +105,6 @@ function love.update(dt)
 	delta_time = dt
 
 end
-
--- For drawing the fps graph...
-fps_graph = {0,0}
-fps_point = 0
-
 function love.draw()
 	if game_state == 0 then
 		love.graphics.print("Spaghettian Ratcity (Test Menu)", 0, 0)
@@ -125,25 +123,6 @@ function love.draw()
 	love.graphics.setLineWidth(1)
 	showFpsGraph(16,128,240, 128)
 end
-
-function showFpsGraph(x,y, graph_width, graph_height) 
-	table.insert(fps_graph, x + fps_point)
-	table.insert(fps_graph, y + (graph_height - fps))
-	fps_point = fps_point + (delta_time * 100)
-
-	if fps_point > graph_width then
-		fps_point = 0
-		fps_graph = {0,0,0,0}
-	end
-
-	love.graphics.setColor(0,0,0,0.5)
-	love.graphics.rectangle("fill", x, y, graph_width, graph_height)
-	love.graphics.setColor(1,1,1)
-	love.graphics.print(fps, x, y)
-	love.graphics.line(fps_graph)
-end
-
-
 function love.keypressed(key, scancode, isrepeat)
    	if key == "escape" then
 		love.mouse.setGrabbed(false)
@@ -181,7 +160,6 @@ function love.keypressed(key, scancode, isrepeat)
 		end
 	end
 end
-
 function love.mousepressed(x, y, button, istouch)
    if button == 1 then -- Versions prior to 0.10.0 use the MouseConstant 'l'
       player_shoot = true
@@ -332,7 +310,6 @@ function updateGame(dt)
 	
 	fps = 1 / dt
 end
-
 function drawGame()
 	love.graphics.setPointSize(quality)
 
@@ -368,7 +345,6 @@ end
 -- Retrieved 2026-02-25, License - CC BY-SA 4.0
 
 -- Calculation Functions
-
 function dump(o)
    if type(o) == 'table' then
       local s = '{ '
@@ -394,7 +370,6 @@ function fixRadians(ra)
 	
 	return ra
 end
-
 -- Object Functions
 function createSprite(iType, iState, iTexture, ix, iy, iz) 
 	return {
@@ -406,8 +381,6 @@ function createSprite(iType, iState, iTexture, ix, iy, iz)
 		z = iz,
 	}
 end
-
-
 function loadLevel(level)
 	-- .srl is just a plain text file. Wanted to be unique with my level file types lol
 	local level_path = "levels/" .. level .. ".srl"
@@ -493,6 +466,7 @@ function loadLevel(level)
 		insert_row = true
 	end
 end
+
 
 -- Display Functions
 function drawLevel()
@@ -835,7 +809,6 @@ function drawLevel()
 		-- Recalculates the ray angle for another added ray to span the field of view.
 		ray_angle = fixRadians(ray_angle + ((pi / 180) * (field_of_view / ray_count)))
 	end
-
 end
 
 function drawSky() 
@@ -993,3 +966,20 @@ function drawSprite()
 	end
 end
 
+
+function showFpsGraph(x,y, graph_width, graph_height) 
+	table.insert(fps_graph, x + fps_point)
+	table.insert(fps_graph, y + (graph_height - fps))
+	fps_point = fps_point + (delta_time * 100)
+
+	if fps_point > graph_width then
+		fps_point = 0
+		fps_graph = {0,0,0,0}
+	end
+
+	love.graphics.setColor(0,0,0,0.5)
+	love.graphics.rectangle("fill", x, y, graph_width, graph_height)
+	love.graphics.setColor(1,1,1)
+	love.graphics.print(fps, x, y)
+	love.graphics.line(fps_graph)
+end
