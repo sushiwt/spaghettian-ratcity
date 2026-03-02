@@ -1,17 +1,17 @@
 -- Moved the renderer to its own function... fun.!!
 
 -- Render settings
-local render = {
-	width = 640,
-	height = 480,
-	center_width = 320,
-	center_height = 240,
-	dof_value = 16,
-	fog = 0,
-	quality = 8, -- Calculates how wide each segment of the screen would be for the rays
-	field_of_view = 75, -- The amount of area the player can see
-	depth = {} -- Contains each rays distance value for sprite occlusion
-}
+local render = {}
+
+render.width = 640
+render.height = 480
+render.center_width = 320
+render.center_height = 240
+render.dof_value = 16
+render.fog = 0
+render.quality = 8 -- Calculates how wide each segment of the screen would be for the rays
+render.field_of_view = 75 -- The amount of area the player can see
+render.depth = {} -- Contains each rays distance value for sprite occlusion
 
 function render:raycaster(player_object, level_object)
 	local point_x, point_y, point_x_offset, point_y_offset, depth_of_field
@@ -356,3 +356,5 @@ function render.fixRadians(ra)
 	
 	return ra
 end
+
+return render
