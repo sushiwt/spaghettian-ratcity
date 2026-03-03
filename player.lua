@@ -9,6 +9,7 @@ player.delta_x = 0
 player.delta_y = 0
 player.angle = math.pi / 2
 player.speed = 1
+player.speed_multiplier = 50
 
 player.max_hp = 100
 player.hp = 100
@@ -18,7 +19,7 @@ function player:updateControls(dt, level_object)
 	
 	-- Keyboard Turn
 	if love.keyboard.isDown("left") then
-		self.angle = self.angle - 0.05 * (dt * speed)
+		self.angle = self.angle - 0.05 * (dt * self.speed_multiplier)
 		if self.angle < 0 then
 			self.angle = self.angle + 2 * pi
 		end
@@ -37,7 +38,7 @@ function player:updateControls(dt, level_object)
 	-- Mouse Turn
 	
 	if mouse_controls == true then
-		self.angle = self.angle + ((love.mouse.getX() - 320) * 0.001) * (dt * speed)
+		self.angle = self.angle + ((love.mouse.getX() - 320) * 0.001) * (dt * self.speed_multiplier)
 		if self.angle < 0 then
 			self.angle = self.angle + 2 * pi
 		end
@@ -72,28 +73,28 @@ function player:updateControls(dt, level_object)
 		-- Checks if the offsets are within the bounds
 		if gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 and gridpos_add_xoffset < level_object.columns and gridpos_add_yoffset < level_object.rows  then
 			if level_object.walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == nil or level_object.walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == 0 then
-				self.x = self.x + self.delta_x * (dt * speed)
+				self.x = self.x + self.delta_x * (dt * self.speed_multiplier)
 			end
 			
 			if level_object.walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == nil or level_object.walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
-				self.y = self.y + self.delta_y * (dt * speed)
+				self.y = self.y + self.delta_y * (dt * self.speed_multiplier)
 			end
 		end
-		-- self.x = self.x + self.delta_x * (dt * speed)
-		-- self.y = self.y + self.delta_y * (dt * speed)
+		-- self.x = self.x + self.delta_x * (dt * self.speed_multiplier)
+		-- self.y = self.y + self.delta_y * (dt * self.speed_multiplier)
 	end
 	
 	if love.keyboard.isDown("down") or love.keyboard.isDown("s") then
 		if gridpos_sub_xoffset < level_object.columns and gridpos_sub_yoffset < level_object.rows and gridpos_sub_xoffset > 0 and gridpos_sub_yoffset > 0 then
 			if level_object.walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_sub_xoffset + 1)] == 0 then
-				self.x = self.x - self.delta_x * (dt * speed)
+				self.x = self.x - self.delta_x * (dt * self.speed_multiplier)
 			end
 			if level_object.walls[math.floor(gridpos_sub_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
-				self.y = self.y - self.delta_y * (dt * speed)
+				self.y = self.y - self.delta_y * (dt * self.speed_multiplier)
 			end
 		end
-		-- self.x = self.x - self.delta_x * (dt * speed)
-		-- self.y = self.y - self.delta_y * (dt * speed)
+		-- self.x = self.x - self.delta_x * (dt * self.speed_multiplier)
+		-- self.y = self.y - self.delta_y * (dt * self.speed_multiplier)
 	end
 	
 	
@@ -112,11 +113,6 @@ function player:updateControls(dt, level_object)
 				[math.floor(player_gridpos_x + 1)] = 0
 			end
 		end
-	end
-	
-	-- Triggers
-	if math.floor(self.x / level_object.cell_size) == 1 and math.floor(self.y / level_object.cell_size) == 5 then
-		game_state = 2
 	end
 end
 

@@ -39,7 +39,6 @@ player_shoot = false
 ui_offset_x = 0
 ui_offset_y = 400
 
-
 -- Map Textures
 textures_image = love.image.newImageData("graphics/defaulttexture.png")
 sky_image = love.image.newImageData("graphics/defaultsky.png")
@@ -56,13 +55,10 @@ debug_number2 = 0
 fps = 0
 delta_time = 0
 
-
-speed = 50 -- I already have a player speed ill remove this eventually
 sprites = {}
 
-
 -- Level initialization. 
-level = "house1"
+level = "homse1"
 invalid_level = false
 
 -- Game States
@@ -90,6 +86,12 @@ function love.update(dt)
 		player_meow:updateControls(dt, Level)
 		updateSprite(sprites)
 
+		
+		-- Triggers
+		if math.floor(player_meow.x / Level.cell_size) == 1 and math.floor(player_meow.y / Level.cell_size) == 5 then
+			game_state = 2
+		end
+
 		if love.keyboard.isDown("o") then
 			debug_number = debug_number - 1
 		end
@@ -109,6 +111,7 @@ function love.update(dt)
 	delta_time = dt
 
 end
+
 function love.draw()
 	if game_state == 0 then
 		love.graphics.print("Spaghettian Ratcity (Test Menu)", 0, 0)
@@ -116,10 +119,11 @@ function love.draw()
 		love.graphics.print("    Play" , 0, 32)
 		love.graphics.print("    Options" , 0, 48)
 		love.graphics.print("    Quit" , 0, 64)
+
 	elseif game_state == 1 then
 		love.graphics.setPointSize(game_renderer.quality)
 
-		-- drawSky()
+		-- game_renderer:drawSky(player_meow)
 		game_renderer:drawRaycaster(Level, player_meow)
 		game_renderer:drawSprites(sprites, player_meow)
 		
@@ -150,6 +154,7 @@ function love.draw()
 	love.graphics.setLineWidth(1)
 	showFpsGraph(16,128,240, 128)
 end
+
 function love.keypressed(key, scancode, isrepeat)
    	if key == "escape" then
 		love.mouse.setGrabbed(false)
@@ -187,30 +192,10 @@ function love.keypressed(key, scancode, isrepeat)
 		end
 	end
 end
+
 function love.mousepressed(x, y, button, istouch)
    if button == 1 then -- Versions prior to 0.10.0 use the MouseConstant 'l'
       player_shoot = true
-   end
-end
-
-
--- "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\love\love.exe" --console "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\spaghettian-ratcity"
--- Debugging purposes :3 the dump function.
--- Source - https://stackoverflow.com/a/27028488
--- Posted by hookenz, modified by community. See post 'Timeline' for change history
--- Retrieved 2026-02-25, License - CC BY-SA 4.0
-
--- Calculation Functions
-function dump(o)
-   if type(o) == 'table' then
-      local s = '{ '
-      for k,v in pairs(o) do
-         if type(k) ~= 'number' then k = '"'..k..'"' end
-         s = s .. dump(v) .. ','
-      end
-      return s .. '} '
-   else
-      return tostring(o)
    end
 end
 
@@ -225,9 +210,57 @@ function createSprite(iType, iState, iTexture, ix, iy, iz)
 		z = iz,
 	}
 end
-function loadLevel(level)
+
+function updateSprite(sprites_table)
+	for index, value in ipairs(sprites_table) do
+		local sprite_x = sprites_table[index].x - player_meow.x
+		local sprite_y = sprites_table[index].y - player_meow.y
+		
+		local CS = math.cos(player_meow.angle)
+		local SS = -math.sin(player_meow.angle)
+		
+		local a = sprite_y * CS + sprite_x * SS
+
+		sprite_x = (a * (game_renderer.width / 1.4) / (sprite_y + 1))+(game_renderer.width/2)
+
+		local bounds = 12
+
+		if sprites_table[index].type == 1 then
+			if sprites_table[index].state == 1 then
+				if player_meow.x < sprites_table[index].x + bounds and
+					player_meow.x > sprites_table[index].x - bounds and
+					player_meow.y < sprites_table[index].y + bounds and
+					player_meow.y > sprites_table[index].y - bounds then
+					sprites_table[index].state = 0
+				end
+			end
+		elseif sprites_table[index].type == 2 then
+			if sprites_table[index].state == 1 then
+				if sprites_table[index].x > player_meow.x then
+					sprites_table[index].x = sprites_table[index].x - 0.01
+				end
+				if sprites_table[index].x < player_meow.x then
+					sprites_table[index].x = sprites_table[index].x + 0.01
+				end
+				if sprites_table[index].y > player_meow.y then
+					sprites_table[index].y = sprites_table[index].y - 0.01
+				end
+				if sprites_table[index].y < player_meow.y then
+					sprites_table[index].y = sprites_table[index].y + 0.01
+				end
+			end
+
+			if player_shoot and sprite_x > game_renderer.center_width - 20 and sprite_x < game_renderer.center_width + 20 then
+				sprites_table[index].state = 0
+			end
+			player_shoot = false
+		end
+	end
+end
+
+function loadLevel(level_name)
 	-- .srl is just a plain text file. Wanted to be unique with my level file types lol
-	local level_path = "levels/" .. level .. ".srl"
+	local level_path = "levels/" .. level_name .. ".srl"
 
 	Level.walls = {}
 	Level.floors = {}
@@ -333,28 +366,7 @@ function initializeGame()
 end
 
 -- Display Functions
-function drawSky() 
-	-- for y = 0, 119 do
-	-- 	local sky_strip = {}
-	-- 	for x = 0, 319 do
-	-- 		local meow = (-(player_meow.angle / (2*pi)*4) * 320 - x)
-			
-	-- 		if meow < 0 then
-	-- 			meow = meow + 320
-	-- 		end
-			
-	-- 		meow = meow % 640
-			
-	-- 		local r, g, b, a = sky_image:getPixel(meow, y)
-
-	-- 		sky_strip[x] = {x,y,r,g,b,a}
-	-- 	end
-
-	-- 	love.graphics.points(sky_strip)
-	-- end
-
-end
-function drawTopDownView() 
+function drawTopDownView(level_object) 
 	-- Draws the background of the level overlay
 	love.graphics.setColor(0,0,0, 0.75)
 	love.graphics.rectangle("fill", 0,0,game_renderer.width,game_renderer.height)
@@ -385,53 +397,25 @@ function drawTopDownView()
 	
 end
 
-function updateSprite(sprites_table)
-	for index, value in ipairs(sprites_table) do
-		local sprite_x = sprites_table[index].x - player_meow.x
-		local sprite_y = sprites_table[index].y - player_meow.y
-		
-		local CS = math.cos(player_meow.angle)
-		local SS = -math.sin(player_meow.angle)
-		
-		local a = sprite_y * CS + sprite_x * SS
+-- "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\love\love.exe" --console "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\spaghettian-ratcity"
+-- Debugging purposes :3 the dump function.
+-- Source - https://stackoverflow.com/a/27028488
+-- Posted by hookenz, modified by community. See post 'Timeline' for change history
+-- Retrieved 2026-02-25, License - CC BY-SA 4.0
 
-		sprite_x = (a * (game_renderer.width / 1.4) / (sprite_y + 1))+(game_renderer.width/2)
-
-		local bounds = 12
-
-		if sprites_table[index].type == 1 then
-			if sprites_table[index].state == 1 then
-				if player_meow.x < sprites_table[index].x + bounds and
-					player_meow.x > sprites_table[index].x - bounds and
-					player_meow.y < sprites_table[index].y + bounds and
-					player_meow.y > sprites_table[index].y - bounds then
-					sprites_table[index].state = 0
-				end
-			end
-		elseif sprites_table[index].type == 2 then
-			if sprites_table[index].state == 1 then
-				if sprites_table[index].x > player_meow.x then
-					sprites_table[index].x = sprites_table[index].x - 0.01
-				end
-				if sprites_table[index].x < player_meow.x then
-					sprites_table[index].x = sprites_table[index].x + 0.01
-				end
-				if sprites_table[index].y > player_meow.y then
-					sprites_table[index].y = sprites_table[index].y - 0.01
-				end
-				if sprites_table[index].y < player_meow.y then
-					sprites_table[index].y = sprites_table[index].y + 0.01
-				end
-			end
-
-			if player_shoot and sprite_x > game_renderer.center_width - 20 and sprite_x < game_renderer.center_width + 20 then
-				sprites_table[index].state = 0
-			end
-			player_shoot = false
-		end
-	end
+-- Calculation Functions
+function dump(o)
+   if type(o) == 'table' then
+      local s = '{ '
+      for k,v in pairs(o) do
+         if type(k) ~= 'number' then k = '"'..k..'"' end
+         s = s .. dump(v) .. ','
+      end
+      return s .. '} '
+   else
+      return tostring(o)
+   end
 end
-
 
 function showFpsGraph(x,y, graph_width, graph_height) 
 	table.insert(fps_graph, x + fps_point)

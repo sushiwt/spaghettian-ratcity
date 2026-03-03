@@ -350,7 +350,6 @@ function render:drawRaycaster(level_object, player_object)
 	end
 end
 
-
 function render:drawSprites(sprites_table, player_object) 
 	for index, value in ipairs(sprites_table) do
 		local sprite_x = sprites_table[index].x -  player_object.x
@@ -418,6 +417,26 @@ function render:drawSprites(sprites_table, player_object)
 	end
 end
 
+function render:drawSky(player_object) 
+	for y = 0, 119 do
+		local sky_strip = {}
+		for x = 0, 319 do
+			local meow = (-(player_object.angle / (2*pi)*4) * 320 - x)
+			
+			if meow < 0 then
+				meow = meow + 320
+			end
+			
+			meow = meow % 640
+			
+			local r, g, b, a = sky_image:getPixel(meow, y)
+
+			sky_strip[x] = {x,y,r,g,b,a}
+		end
+
+		love.graphics.points(sky_strip)
+	end
+end
 
 -- Changes the radians to clamp it between 0 and 360 degrees
 function render.fixRadians(ra)
