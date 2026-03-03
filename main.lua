@@ -30,7 +30,7 @@ Level = {
 	cell_size = 32,
 }
 
-level_toggle = false
+level_topdown_toggle = false
 mouse_controls = true
 
 -- Gun Settings
@@ -131,7 +131,7 @@ function love.draw()
 		love.graphics.draw(healthbar_image, 32, game_renderer.height - 128 , 0, 3)
 		love.graphics.draw(crosshair_image, game_renderer.center_width - 15, game_renderer.center_height - 15)
 
-		if level_toggle then
+		if level_topdown_toggle then
 			drawTopDownView()
 		end
 
