@@ -3,17 +3,23 @@
 -- Render settings
 local render = {}
 
+render.x = 0
+render.y = 0
+
 render.width = 640
 render.height = 480
-render.center_width = 320
-render.center_height = 240
+
+render.center_width = render.width / 2
+render.center_height = render.height / 2
+
 render.dof_value = 16
 render.fog = 0
+
 render.quality = 8 -- Calculates how wide each segment of the screen would be for the rays
 render.field_of_view = 75 -- The amount of area the player can see
 render.depth = {} -- Contains each rays distance value for sprite occlusion
 
-function render:raycaster(player_object, level_object)
+function render:drawRaycaster(level_object, player_object)
 	local point_x, point_y, point_x_offset, point_y_offset, depth_of_field
 	local distance = 0
 	
@@ -281,7 +287,7 @@ function render:raycaster(player_object, level_object)
 				r, g, b, a = textures_image:getPixel(math.floor(texture_x), math.floor(texture_y))
 			end
 
-			wall_strip[line_y + 1] = {starting_segment, line_offset + line_y, (r * fog_walls) * shade , (g * fog_walls) * shade, (b * fog_walls) * shade, a}
+			wall_strip[line_y + 1] = {self.x + starting_segment,  self.y + line_offset + line_y, (r * fog_walls) * shade , (g * fog_walls) * shade, (b * fog_walls) * shade, a}
 			texture_y = texture_y + texture_y_step
 		end
 
@@ -320,7 +326,7 @@ function render:raycaster(player_object, level_object)
 				floor_shade = 0.9
 			end
 			
-			floor_strip[floor_strip_index] = {starting_segment,line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
+			floor_strip[floor_strip_index] = {self.x + starting_segment,  self.y + line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
 			floor_strip_index = floor_strip_index + 1
 			
 			mp = level_object.ceilings[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32
@@ -329,7 +335,7 @@ function render:raycaster(player_object, level_object)
 				r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)
 				-- love.graphics.setColor(r * floor_shade,g * floor_shade,b * floor_shade,a)
 				-- love.graphics.points(starting_segment,(self.height) - line_y)
-				ceiling_strip[ceiling_strip_index] = {starting_segment,(self.height) - line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
+				ceiling_strip[ceiling_strip_index] = {self.x + starting_segment, self.y + (self.height) - line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
 				ceiling_strip_index = ceiling_strip_index + 1
 			end
 			
@@ -343,6 +349,75 @@ function render:raycaster(player_object, level_object)
 		ray_angle = self.fixRadians(ray_angle + ((pi / 180) * (self.field_of_view / ray_count)))
 	end
 end
+
+
+function render:drawSprites(sprites_table, player_object) 
+	for index, value in ipairs(sprites_table) do
+		local sprite_x = sprites_table[index].x -  player_object.x
+		local sprite_y = sprites_table[index].y -  player_object.y
+		local sprite_z = sprites_table[index].z
+		
+		local CS = math.cos(player_object.angle)
+		local SS = -math.sin(player_object.angle)
+		
+		local a = sprite_y * CS + sprite_x * SS
+		local b = sprite_x * CS - sprite_y * SS
+		sprite_x = a
+		sprite_y = b
+		
+		local epsilon = 0.1
+		
+		sprite_x = (sprite_x * (self.width / 1.4) / (sprite_y + epsilon))+(self.width/2)
+		sprite_y = (sprite_z * (self.width / 1.4) / (sprite_y + epsilon))+(self.height/2)
+		
+		local sprite_size = 16 
+		local scale = (sprite_size * self.height / (b + epsilon))
+		local sprite_texture_x = 0
+		local sprite_texture_y = 16
+		
+		local sprite_quality = 0
+		local sprite_shade = 1
+
+		if b < 25 then
+			sprite_quality = (1 / (b + epsilon)) * 25
+		end
+		
+		if self.fog > 0 then
+			sprite_shade = math.min(1 / (b + epsilon) * (self.fog * 25), 1)
+		end
+		
+		local sprite_strip = {}
+		local sprite_strip_index = 0
+		
+		for x = sprite_x - scale / 2, sprite_x + scale / 2, self.quality + sprite_quality do
+			-- The third condition is a failsafe to not cause an out of bounds error,
+			-- but it refuses to draw the rest of the sprite because of it.
+			-- Fix it later
+			sprite_texture_y = 16
+			for y = 0, scale do
+				if self.depth[math.floor(x/self.quality) + 1] ~= nil and 
+				b > 10 and b < self.depth[math.floor(x/self.quality) + 1] and 
+				sprite_y - y < self.height and
+				sprites_table[index].state == 1
+				then
+					local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x * (self.quality + sprite_quality)),math.floor(sprite_texture_y) + (sprites_table[index].texture * sprite_size))
+					
+					sprite_strip[sprite_strip_index] = {self.x + x - self.quality / 2, self.y + sprite_y - y, r * sprite_shade,g * sprite_shade,b * sprite_shade,a}
+					sprite_strip_index = sprite_strip_index + 1
+				end	
+				sprite_texture_y = sprite_texture_y - (sprite_size / scale)
+				
+				if sprite_texture_y < 0 then
+					sprite_texture_y = 0
+				end
+			end
+			sprite_texture_x = sprite_texture_x + ((sprite_size)/ scale)
+		end
+		
+		love.graphics.points(sprite_strip)
+	end
+end
+
 
 -- Changes the radians to clamp it between 0 and 360 degrees
 function render.fixRadians(ra)

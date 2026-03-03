@@ -17,6 +17,7 @@ pi_half = pi / 2
 
 -- File Requirements
 local game_renderer = require("render")
+local player_meow = require("player")
 
 -- Level properties
 Level = {
@@ -28,125 +29,6 @@ Level = {
 	wall_height = 30,
 	cell_size = 32,
 }
-    
--- Player properties
-Player = {
-	x = 64,
-	y = 64,
-	delta_x = 0,
-	delta_y = 0,
-	angle = pi_half,
-	speed = 1,
-	max_hp = 100,
-	hp = 100
-}
-
-function Player:updateControls(dt, level_object) 
-	-- Player Movement
-	
-	-- Keyboard Turn
-	if love.keyboard.isDown("left") then
-		self.angle = self.angle - 0.05 * (dt * speed)
-		if self.angle < 0 then
-			self.angle = self.angle + 2 * pi
-		end
-		self.delta_x = math.cos(self.angle) * self.speed
-		self.delta_y = math.sin(self.angle) * self.speed
-	end
-	if love.keyboard.isDown("right") then
-		self.angle = self.angle + 0.05 * (dt * speed)
-		if self.angle >= 2*pi then
-			self.angle = self.angle - 2 * pi
-		end
-		self.delta_x = math.cos(self.angle) * self.speed
-		self.delta_y = math.sin(self.angle) * self.speed
-	end
-	
-	-- Mouse Turn
-	
-	if mouse_controls == true then
-		self.angle = self.angle + ((love.mouse.getX() - game_renderer.center_width) * 0.001) * (dt * speed)
-		if self.angle < 0 then
-			self.angle = self.angle + 2 * pi
-		end
-		if self.angle >= 2*pi then
-			self.angle = self.angle - 2 * pi
-		end
-		self.delta_x = math.cos(self.angle) * self.speed
-		self.delta_y = math.sin(self.angle) * self.speed
-		love.mouse.setPosition(game_renderer.center_width,game_renderer.center_height)
-	end
-	
-	
-	-- Player Transform
-	local player_boundary = 4
-	
-	local x_offset = 0
-	if self.delta_x < 0 then x_offset = -player_boundary else x_offset = player_boundary end
-	
-	local y_offset = 0
-	if self.delta_y < 0 then y_offset = -player_boundary else y_offset = player_boundary end
-	
-	local player_gridpos_x = self.x / level_object.cell_size
-	local gridpos_add_xoffset = (self.x + x_offset) / level_object.cell_size
-	local gridpos_sub_xoffset = (self.x - x_offset) / level_object.cell_size
-	
-	local player_gridpos_y = self.y / level_object.cell_size
-	local gridpos_add_yoffset = (self.y + y_offset) / level_object.cell_size
-	local gridpos_sub_yoffset = (self.y - y_offset) / level_object.cell_size
-	
-	
-	if love.keyboard.isDown("up") or love.keyboard.isDown("w") then
-		-- Checks if the offsets are within the bounds
-		if gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 and gridpos_add_xoffset < level_object.columns and gridpos_add_yoffset < level_object.rows  then
-			if level_object.walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == nil or level_object.walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_add_xoffset + 1)] == 0 then
-				self.x = self.x + self.delta_x * (dt * speed)
-			end
-			
-			if level_object.walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == nil or level_object.walls[math.floor(gridpos_add_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
-				self.y = self.y + self.delta_y * (dt * speed)
-			end
-		end
-		-- self.x = self.x + self.delta_x * (dt * speed)
-		-- self.y = self.y + self.delta_y * (dt * speed)
-	end
-	
-	if love.keyboard.isDown("down") or love.keyboard.isDown("s") then
-		if gridpos_sub_xoffset < level_object.columns and gridpos_sub_yoffset < level_object.rows and gridpos_sub_xoffset > 0 and gridpos_sub_yoffset > 0 then
-			if level_object.walls[math.floor(player_gridpos_y) + 1][math.floor(gridpos_sub_xoffset + 1)] == 0 then
-				self.x = self.x - self.delta_x * (dt * speed)
-			end
-			if level_object.walls[math.floor(gridpos_sub_yoffset) + 1][math.floor(player_gridpos_x + 1)] == 0 then
-				self.y = self.y - self.delta_y * (dt * speed)
-			end
-		end
-		-- self.x = self.x - self.delta_x * (dt * speed)
-		-- self.y = self.y - self.delta_y * (dt * speed)
-	end
-	
-	
-	if love.keyboard.isDown("e") then
-		-- Checks if the offsets are within the bounds
-		if gridpos_add_xoffset < level_object.columns and gridpos_add_yoffset < level_object.rows and gridpos_add_xoffset > 0 and gridpos_add_yoffset > 0 then
-			if level_object.walls[math.floor(player_gridpos_y) + 1]
-			[math.floor(gridpos_add_xoffset + 1)] == 4 then
-				level_object.walls[math.floor(player_gridpos_y) + 1]
-				[math.floor(gridpos_add_xoffset + 1)] = 0
-			end
-			
-			if level_object.walls[math.floor(gridpos_add_yoffset) + 1]
-			[math.floor(player_gridpos_x + 1)] == 4 then
-				level_object.walls[math.floor(gridpos_add_yoffset) + 1]
-				[math.floor(player_gridpos_x + 1)] = 0
-			end
-		end
-	end
-	
-	-- Triggers
-	if math.floor(self.x / level_object.cell_size) == 1 and math.floor(self.y / level_object.cell_size) == 5 then
-		game_state = 2
-	end
-end
 
 level_toggle = false
 mouse_controls = true
@@ -205,7 +87,8 @@ end
 
 function love.update(dt)
 	if game_state == 1 then
-		Player:updateControls(dt)
+		player_meow:updateControls(dt, Level)
+		updateSprite(sprites)
 
 		if love.keyboard.isDown("o") then
 			debug_number = debug_number - 1
@@ -220,9 +103,6 @@ function love.update(dt)
 		if love.keyboard.isDown("l") then
 			debug_number2 = debug_number2 + 1
 		end
-		
-
-		
 	end
 
 	fps = 1 / dt
@@ -240,8 +120,8 @@ function love.draw()
 		love.graphics.setPointSize(game_renderer.quality)
 
 		-- drawSky()
-		drawLevel()
-		--drawSprite()
+		game_renderer:drawRaycaster(Level, player_meow)
+		game_renderer:drawSprites(sprites, player_meow)
 		
 		love.graphics.draw(shooter_image, game_renderer.width - 180, game_renderer.height - 128,  0, 4)
 		love.graphics.draw(healthbar_image, 32, game_renderer.height - 128 , 0, 3)
@@ -252,7 +132,7 @@ function love.draw()
 		end
 
 		
-		love.graphics.print(math.floor(Player.x) .. ", " .. math.floor(Player.y), ui_offset_x, ui_offset_y)
+		love.graphics.print(math.floor(player_meow.x) .. ", " .. math.floor(player_meow.y), ui_offset_x, ui_offset_y)
 		print(debug_number)
 
 		if invalid_level then
@@ -379,9 +259,9 @@ function loadLevel(level)
 					elseif level_info == "ly" then
 						Level.rows = tonumber(value)
 					elseif level_info == "px" then
-						Player.x = tonumber(value)
+						player_meow.x = tonumber(value)
 					elseif level_info == "py" then
-						Player.y = tonumber(value)
+						player_meow.y = tonumber(value)
 					elseif level_info == "texture" then
 						textures_image = love.image.newImageData("graphics/" .. value .. ".png")
 					elseif level_info == "sky" then
@@ -432,8 +312,8 @@ function loadLevel(level)
 end
 
 function initializeGame()
-	Player.delta_x = math.cos(Player.angle) * Player.speed
-	Player.delta_y = math.sin(Player.angle) * Player.speed
+	player_meow.delta_x = math.cos(player_meow.angle) * player_meow.speed
+	player_meow.delta_y = math.sin(player_meow.angle) * player_meow.speed
 	if mouse_controls then
 		love.mouse.setGrabbed(true)
 		love.mouse.setVisible(false)
@@ -453,15 +333,11 @@ function initializeGame()
 end
 
 -- Display Functions
-function drawLevel()
-	game_renderer:raycaster(Player, Level)
-end
-
 function drawSky() 
 	-- for y = 0, 119 do
 	-- 	local sky_strip = {}
 	-- 	for x = 0, 319 do
-	-- 		local meow = (-(Player.angle / (2*pi)*4) * 320 - x)
+	-- 		local meow = (-(player_meow.angle / (2*pi)*4) * 320 - x)
 			
 	-- 		if meow < 0 then
 	-- 			meow = meow + 320
@@ -478,7 +354,6 @@ function drawSky()
 	-- end
 
 end
-
 function drawTopDownView() 
 	-- Draws the background of the level overlay
 	love.graphics.setColor(0,0,0, 0.75)
@@ -489,10 +364,10 @@ function drawTopDownView()
 		for column, column_value in ipairs(row_value) do
 			love.graphics.setColor(1,1,1, 0.8)
 			
-			row_left = row * Level.cell_size - Level.cell_size - Player.y + (game_renderer.height / 2)
-			column_top = column * Level.cell_size - Level.cell_size - Player.x + (game_renderer.width / 2)
-			row_right = row * Level.cell_size - Player.y + (game_renderer.height / 2)
-			column_bottom = column * Level.cell_size - Player.x + (game_renderer.width / 2)
+			row_left = row * Level.cell_size - Level.cell_size - player_meow.y + (game_renderer.height / 2)
+			column_top = column * Level.cell_size - Level.cell_size - player_meow.x + (game_renderer.width / 2)
+			row_right = row * Level.cell_size - player_meow.y + (game_renderer.height / 2)
+			column_bottom = column * Level.cell_size - player_meow.x + (game_renderer.width / 2)
 			
 			local vertices = {column_top, row_left, column_top, row_right, column_bottom, row_right, column_bottom, row_left}
 			
@@ -506,109 +381,54 @@ function drawTopDownView()
 	love.graphics.setColor(255, 0, 0)
 	love.graphics.circle( "fill", game_renderer.width / 2, game_renderer.height / 2, 3)
 	
-	love.graphics.line(game_renderer.width / 2, game_renderer.height / 2, game_renderer.width / 2 + Player.delta_x * 10, game_renderer.height / 2 + Player.delta_y * 10)
+	love.graphics.line(game_renderer.width / 2, game_renderer.height / 2, game_renderer.width / 2 + player_meow.delta_x * 10, game_renderer.height / 2 + player_meow.delta_y * 10)
 	
 end
 
-
-function drawSprite() 
-	for index, value in ipairs(sprites) do
-		local bounds = 12
-
-		local sprite_x = sprites[index].x - Player.x
-		local sprite_y = sprites[index].y - Player.y
-		local sprite_z = sprites[index].z
+function updateSprite(sprites_table)
+	for index, value in ipairs(sprites_table) do
+		local sprite_x = sprites_table[index].x - player_meow.x
+		local sprite_y = sprites_table[index].y - player_meow.y
 		
-		local CS = math.cos(Player.angle)
-		local SS = -math.sin(Player.angle)
+		local CS = math.cos(player_meow.angle)
+		local SS = -math.sin(player_meow.angle)
 		
 		local a = sprite_y * CS + sprite_x * SS
-		local b = sprite_x * CS - sprite_y * SS
-		sprite_x = a
-		sprite_y = b
-		
-		local epsilon = 0.1
-		
-		sprite_x = (sprite_x * (game_renderer.width / 1.4) / (sprite_y + epsilon))+(game_renderer.width/2)
-		sprite_y = (sprite_z * (game_renderer.width / 1.4) / (sprite_y + epsilon))+(game_renderer.height/2)
-		
-		local sprite_size = 16 
-		local scale = (sprite_size * game_renderer.height / (b + epsilon))
-		local sprite_texture_x = 0
-		local sprite_texture_y = 16
-		
-		local sprite_quality = 0
-		local sprite_shade = 1
-		
-		
-		if sprites[index].type == 1 then
-			if sprites[index].state == 1 then
-				if Player.x < sprites[index].x + bounds and
-					Player.x > sprites[index].x - bounds and
-					Player.y < sprites[index].y + bounds and
-					Player.y > sprites[index].y - bounds then
-					sprites[index].state = 0
+
+		sprite_x = (a * (game_renderer.width / 1.4) / (sprite_y + 1))+(game_renderer.width/2)
+
+		local bounds = 12
+
+		if sprites_table[index].type == 1 then
+			if sprites_table[index].state == 1 then
+				if player_meow.x < sprites_table[index].x + bounds and
+					player_meow.x > sprites_table[index].x - bounds and
+					player_meow.y < sprites_table[index].y + bounds and
+					player_meow.y > sprites_table[index].y - bounds then
+					sprites_table[index].state = 0
 				end
 			end
-		elseif sprites[index].type == 2 then
-			if sprites[index].state == 1 then
-				if sprites[index].x > Player.x then
-					sprites[index].x = sprites[index].x - 1
+		elseif sprites_table[index].type == 2 then
+			if sprites_table[index].state == 1 then
+				if sprites_table[index].x > player_meow.x then
+					sprites_table[index].x = sprites_table[index].x - 0.01
 				end
-				if sprites[index].x < Player.x then
-					sprites[index].x = sprites[index].x + 1
+				if sprites_table[index].x < player_meow.x then
+					sprites_table[index].x = sprites_table[index].x + 0.01
 				end
-				if sprites[index].y > Player.y then
-					sprites[index].y = sprites[index].y - 1
+				if sprites_table[index].y > player_meow.y then
+					sprites_table[index].y = sprites_table[index].y - 0.01
 				end
-				if sprites[index].y < Player.y then
-					sprites[index].y = sprites[index].y + 1
+				if sprites_table[index].y < player_meow.y then
+					sprites_table[index].y = sprites_table[index].y + 0.01
 				end
 			end
 
 			if player_shoot and sprite_x > game_renderer.center_width - 20 and sprite_x < game_renderer.center_width + 20 then
-				sprites[index].state = 0
+				sprites_table[index].state = 0
 			end
 			player_shoot = false
 		end
-
-		if b < 25 then
-			sprite_quality = (1 / (b + epsilon)) * 25
-		end
-		
-		if game_renderer.fog > 0 then
-			sprite_shade = math.min(1 / (b + epsilon) * (game_renderer.fog * 25), 1)
-		end
-		
-		local sprite_strip = {}
-		local sprite_strip_index = 0
-		
-		for x = sprite_x - scale / 2, sprite_x + scale / 2, game_renderer.quality + sprite_quality do
-			-- The third condition is a failsafe to not cause an out of bounds error,
-			-- but it refuses to draw the rest of the sprite because of it.
-			-- Fix it later
-			sprite_texture_y = 16
-			for y = 0, scale do
-				if self.depth[math.floor(x/game_renderer.quality) + 1] ~= nil and 
-				b > 10 and b < game_renderer.depth[math.floor(x/game_renderer.quality) + 1] and 
-				sprite_y - y < game_renderer.height and
-				sprites[index].state == 1
-				then
-					local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x * (game_renderer.quality + sprite_quality)),math.floor(sprite_texture_y) + (sprites[index].texture * sprite_size))
-					
-					sprite_strip[sprite_strip_index] = {x - game_renderer.quality / 2, sprite_y - y, r * sprite_shade,g * sprite_shade,b * sprite_shade,a}
-					sprite_strip_index = sprite_strip_index + 1
-				end	
-				sprite_texture_y = sprite_texture_y - (sprite_size / scale)
-				
-				if sprite_texture_y < 0 then
-					sprite_texture_y = 0
-				end
-			end
-			sprite_texture_x = sprite_texture_x + ((sprite_size)/ scale)
-		end
-		
-		love.graphics.points(sprite_strip)
 	end
 end
 
