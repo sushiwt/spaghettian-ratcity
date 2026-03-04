@@ -7,7 +7,7 @@ render.x = 0
 render.y = 0
 
 render.width = 640
-render.height = 480
+render.height = 360
 
 render.center_width = render.width / 2
 render.center_height = render.height / 2
@@ -15,7 +15,7 @@ render.center_height = render.height / 2
 render.dof_value = 16
 render.fog = 0
 
-render.quality = 8 -- Calculates how wide each segment of the screen would be for the rays
+render.quality = 1 -- Calculates how wide each segment of the screen would be for the rays
 render.field_of_view = 75 -- The amount of area the player can see
 render.depth = {} -- Contains each rays distance value for sprite occlusion
 

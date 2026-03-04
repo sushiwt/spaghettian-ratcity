@@ -27,7 +27,7 @@ function player:updateControls(dt, level_object)
 		self.delta_y = math.sin(self.angle) * self.speed
 	end
 	if love.keyboard.isDown("right") then
-		self.angle = self.angle + 0.05 * (dt * speed)
+		self.angle = self.angle + 0.05 * (dt * self.speed_multiplier)
 		if self.angle >= 2*pi then
 			self.angle = self.angle - 2 * pi
 		end

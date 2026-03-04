@@ -1,9 +1,0 @@
-{
-    "Lua.diagnostics.globals": [
-        "love",
-        "dump"
-    ],
-    "Lua.diagnostics.disable": [
-        "undefined-field"
-    ]
-}

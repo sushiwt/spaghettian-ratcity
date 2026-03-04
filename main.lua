@@ -18,17 +18,8 @@ pi_half = pi / 2
 -- File Requirements
 local game_renderer = require("render")
 local player_meow = require("player")
-
--- Level properties
-Level = {
-	walls = {},
-	floors = {},
-	ceilings = {},
-	rows = 0,
-	columns = 0,
-	wall_height = 30,
-	cell_size = 32,
-}
+local level_meow = require("levelhandler")
+local sprite_meow = require("spritehandler")
 
 level_topdown_toggle = false
 mouse_controls = true
@@ -71,7 +62,6 @@ menu_option = 0
 fps_graph = {0,0}
 fps_point = 0
 
-
 -- Love2D Functions
 function love.load(dt) 
     shooter_image:setFilter("nearest", "nearest")
@@ -83,12 +73,12 @@ end
 
 function love.update(dt)
 	if game_state == 1 then
-		player_meow:updateControls(dt, Level)
-		updateSprite(sprites)
+		player_meow:updateControls(dt, level_meow)
+		sprite_meow.updateSprite(sprites, player_meow, game_renderer)
 
 		
 		-- Triggers
-		if math.floor(player_meow.x / Level.cell_size) == 1 and math.floor(player_meow.y / Level.cell_size) == 5 then
+		if math.floor(player_meow.x / level_meow.cell_size) == 1 and math.floor(player_meow.y / level_meow.cell_size) == 5 then
 			game_state = 2
 		end
 
@@ -124,7 +114,7 @@ function love.draw()
 		love.graphics.setPointSize(game_renderer.quality)
 
 		-- game_renderer:drawSky(player_meow)
-		game_renderer:drawRaycaster(Level, player_meow)
+		game_renderer:drawRaycaster(level_meow, player_meow)
 		game_renderer:drawSprites(sprites, player_meow)
 		
 		love.graphics.draw(shooter_image, game_renderer.width - 180, game_renderer.height - 128,  0, 4)
@@ -185,7 +175,7 @@ function love.keypressed(key, scancode, isrepeat)
 				end
 		end
 		if key == "i" then
-				level_toggle = not level_toggle
+				level_topdown_toggle = not level_topdown_toggle
 		end
 		if key == "t" then
 				initializeGame()
@@ -199,151 +189,6 @@ function love.mousepressed(x, y, button, istouch)
    end
 end
 
--- Object Functions
-function createSprite(iType, iState, iTexture, ix, iy, iz) 
-	return {
-		type = iType,
-		state = iState,
-		texture = iTexture,
-		x = ix,
-		y = iy,
-		z = iz,
-	}
-end
-
-function updateSprite(sprites_table)
-	for index, value in ipairs(sprites_table) do
-		local sprite_x = sprites_table[index].x - player_meow.x
-		local sprite_y = sprites_table[index].y - player_meow.y
-		
-		local CS = math.cos(player_meow.angle)
-		local SS = -math.sin(player_meow.angle)
-		
-		local a = sprite_y * CS + sprite_x * SS
-
-		sprite_x = (a * (game_renderer.width / 1.4) / (sprite_y + 1))+(game_renderer.width/2)
-
-		local bounds = 12
-
-		if sprites_table[index].type == 1 then
-			if sprites_table[index].state == 1 then
-				if player_meow.x < sprites_table[index].x + bounds and
-					player_meow.x > sprites_table[index].x - bounds and
-					player_meow.y < sprites_table[index].y + bounds and
-					player_meow.y > sprites_table[index].y - bounds then
-					sprites_table[index].state = 0
-				end
-			end
-		elseif sprites_table[index].type == 2 then
-			if sprites_table[index].state == 1 then
-				if sprites_table[index].x > player_meow.x then
-					sprites_table[index].x = sprites_table[index].x - 0.01
-				end
-				if sprites_table[index].x < player_meow.x then
-					sprites_table[index].x = sprites_table[index].x + 0.01
-				end
-				if sprites_table[index].y > player_meow.y then
-					sprites_table[index].y = sprites_table[index].y - 0.01
-				end
-				if sprites_table[index].y < player_meow.y then
-					sprites_table[index].y = sprites_table[index].y + 0.01
-				end
-			end
-
-			if player_shoot and sprite_x > game_renderer.center_width - 20 and sprite_x < game_renderer.center_width + 20 then
-				sprites_table[index].state = 0
-			end
-			player_shoot = false
-		end
-	end
-end
-
-function loadLevel(level_name)
-	-- .srl is just a plain text file. Wanted to be unique with my level file types lol
-	local level_path = "levels/" .. level_name .. ".srl"
-
-	Level.walls = {}
-	Level.floors = {}
-	Level.ceilings = {}
-
-	local file_section = 0
-	local level_layer = "none"
-	local insert_row = false
-
-	for line in love.filesystem.lines(level_path) do
-		local level_info = ""
-		local level_row = {}
-
-		for value in line:gmatch("[^,]+") do
-			-- File section 0 checks the level information, like the level size and the player position
-			-- If it detects the text "changetolevel" as its checking the level information, it changes
-			-- to File section 1, the level information checker.
-			if file_section == 0 then
-
-				if value == "changetolevel" then
-					file_section = 1
-				end
-				
-				if level_info == "" then
-					level_info = value
-				else 
-					if level_info == "lx" then
-						Level.columns = tonumber(value)
-					elseif level_info == "ly" then
-						Level.rows = tonumber(value)
-					elseif level_info == "px" then
-						player_meow.x = tonumber(value)
-					elseif level_info == "py" then
-						player_meow.y = tonumber(value)
-					elseif level_info == "texture" then
-						textures_image = love.image.newImageData("graphics/" .. value .. ".png")
-					elseif level_info == "sky" then
-						sky_image = love.image.newImageData("graphics/" .. value .. ".png")
-					elseif level_info == "fog" then
-						game_renderer.fog = tonumber(value)
-					end
-				end
-
-			elseif file_section == 1 then
-				-- Checks if the value is a number or an empty space "." 
-				-- If both conditions aren't true, it assumes that a new layer 
-				-- is being set up. Might change this later. 
-				if tonumber(value) then
-					table.insert(level_row, tonumber(value) + 1)
-				elseif value == "." then
-					table.insert(level_row, 0)
-				else
-					level_layer = value
-					insert_row = false
-				end
-			end
-		end
-
-		-- It only adds the walls if its in file section 1, the level information checker.
-		-- It adds walls to its designated level layer, but only if its able to with the 
-		-- insert row variable.
-		if file_section == 1 and insert_row then
-			if level_layer == "walls" then
-				table.insert(Level.walls, level_row)
-			elseif level_layer == "floors" then
-				table.insert(Level.floors, level_row)
-			elseif level_layer == "ceilings" then
-				table.insert(Level.ceilings, level_row)
-			end
-		end
-
-		-- This is a failsafe to prevent empty rows from being added to 
-		-- the level contents. 
-		-- If a level layer's value recently changes, the insert_row boolean
-		-- changes to false, as the current line doesn't define any row data, so 
-		-- the level_row is empty. Because of that, insert_row aims to prevent the 
-		-- if statement above this from manipulating the actual level arrays 
-		-- before actually checking the next line, which does have the row data. 
-		-- I hated explaining this and I am going to fix it later.
-		insert_row = true
-	end
-end
-
 function initializeGame()
 	player_meow.delta_x = math.cos(player_meow.angle) * player_meow.speed
 	player_meow.delta_y = math.sin(player_meow.angle) * player_meow.speed
@@ -352,15 +197,15 @@ function initializeGame()
 		love.mouse.setVisible(false)
 	end
 	
-	sprites[1] = createSprite(2, 1, 0, Level.cell_size * 3.5, Level.cell_size * 2, 8)
-	sprites[2] = createSprite(1, 1, 1, Level.cell_size * 4.5, Level.cell_size * 2, 8)
-	sprites[3] = createSprite(1, 1, 0, Level.cell_size * 5.5, Level.cell_size * 2, 8)
+	sprites[1] = sprite_meow.createSprite(2, 1, 0, level_meow.cell_size * 3.5, level_meow.cell_size * 2, 8)
+	sprites[2] = sprite_meow.createSprite(1, 1, 1, level_meow.cell_size * 4.5, level_meow.cell_size * 2, 8)
+	sprites[3] = sprite_meow.createSprite(1, 1, 0, level_meow.cell_size * 5.5, level_meow.cell_size * 2, 8)
 	
 	-- Load level if levels are available
 	if love.filesystem.getInfo("levels/" .. level .. ".srl") then
-		loadLevel(level)
+		level_meow:loadLevel(level, game_renderer, player_meow)
 	else
-		loadLevel("default")
+		level_meow:loadLevel("default", game_renderer, player_meow)
 		invalid_level = true
 	end
 end
@@ -372,14 +217,14 @@ function drawTopDownView(level_object)
 	love.graphics.rectangle("fill", 0,0,game_renderer.width,game_renderer.height)
 
 	-- Draws the level
-	for row, row_value in pairs(Level.walls) do
+	for row, row_value in pairs(level_meow.walls) do
 		for column, column_value in ipairs(row_value) do
 			love.graphics.setColor(1,1,1, 0.8)
 			
-			row_left = row * Level.cell_size - Level.cell_size - player_meow.y + (game_renderer.height / 2)
-			column_top = column * Level.cell_size - Level.cell_size - player_meow.x + (game_renderer.width / 2)
-			row_right = row * Level.cell_size - player_meow.y + (game_renderer.height / 2)
-			column_bottom = column * Level.cell_size - player_meow.x + (game_renderer.width / 2)
+			row_left = row * level_meow.cell_size - level_meow.cell_size - player_meow.y + (game_renderer.height / 2)
+			column_top = column * level_meow.cell_size - level_meow.cell_size - player_meow.x + (game_renderer.width / 2)
+			row_right = row * level_meow.cell_size - player_meow.y + (game_renderer.height / 2)
+			column_bottom = column * level_meow.cell_size - player_meow.x + (game_renderer.width / 2)
 			
 			local vertices = {column_top, row_left, column_top, row_right, column_bottom, row_right, column_bottom, row_left}
 			
