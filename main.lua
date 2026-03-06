@@ -35,6 +35,9 @@ textures_image = love.image.newImageData("graphics/defaulttexture.png")
 sky_image = love.image.newImageData("graphics/defaultsky.png")
 sprites_image = love.image.newImageData("graphics/smiley.png")
 
+
+texte = love.graphics.newImage("graphics/defaulttexture.png")
+
 -- UI Textures
 shooter_image = love.graphics.newImage("graphics/lasershooter.png")
 healthbar_image = love.graphics.newImage("graphics/uibar.png")
@@ -115,7 +118,7 @@ function love.draw()
 
 		-- game_renderer:drawSky(player_meow)
 		game_renderer:drawRaycaster(level_meow, player_meow)
-		game_renderer:drawSprites(sprites, player_meow)
+		-- game_renderer:drawSprites(sprites, player_meow)
 		
 		love.graphics.draw(shooter_image, game_renderer.width - 180, game_renderer.height - 128,  0, 4)
 		love.graphics.draw(healthbar_image, 32, game_renderer.height - 128 , 0, 3)
