@@ -227,12 +227,13 @@ function render:drawRaycaster(level_object, player_object)
 		-- The numerator takes care of the line segment somethng important
 		local texture_y_step = 32 / line_height 
 		local texture_y_offset = 0
-		
+	
 		if line_height > self.height then
 			texture_y_offset = (line_height - self.height) / 2.0
 			line_height = self.height
 		end
 		
+	
 		local line_offset = (self.center_height)-line_height/2
 		
 		if line_height > self.height then
@@ -282,11 +283,12 @@ function render:drawRaycaster(level_object, player_object)
 
 		shade = shade * fog_walls
 		
-		local r, g, b = 0,0,0,0
+		love.graphics.setColor(shade,shade,shade,1)
 		
-		local quadmeow = love.graphics.newQuad(starting_segment, line_offset, self.quality, line_height, texte)
+		local quadmeow = love.graphics.newQuad(math.floor(texture_x), texture_y_offset, self.quality, line_height, 32, ((texte:getHeight() / 32) * line_height) + ((texte:getHeight() / 16) * (texture_y_offset)))
 		love.graphics.draw(texte, quadmeow, starting_segment, line_offset)
 
+		love.graphics.setColor(1,1,1,1)
 		-- for line_y = 0, line_height do
 		-- 	r, g, b = textures_image:getPixel(math.floor(texture_x), math.floor(texture_y))
 

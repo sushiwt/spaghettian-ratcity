@@ -67,6 +67,7 @@ fps_point = 0
 
 -- Love2D Functions
 function love.load(dt) 
+	texte:setFilter("nearest", "nearest")
     shooter_image:setFilter("nearest", "nearest")
     healthbar_image:setFilter("nearest", "nearest")
 	if game_state == 1 then
