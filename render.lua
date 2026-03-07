@@ -395,28 +395,14 @@ function render:drawSprites(sprites_table, player_object)
 			-- The third condition is a failsafe to not cause an out of bounds error,
 			-- but it refuses to draw the rest of the sprite because of it.
 			-- Fix it later
-			sprite_texture_y = 16
-			for y = 0, scale do
-				if self.depth[math.floor(x/self.quality) + 1] ~= nil and 
-				b > 10 and b < self.depth[math.floor(x/self.quality) + 1] and 
-				sprite_y - y < self.height and
-				sprites_table[index].state == 1
-				then
-					local r,g,b,a = sprites_image:getPixel(math.floor(sprite_texture_x * (self.quality + sprite_quality)),math.floor(sprite_texture_y) + (sprites_table[index].texture * sprite_size))
-					
-					sprite_strip[sprite_strip_index] = {self.x + x - self.quality / 2, self.y + sprite_y - y, r * sprite_shade,g * sprite_shade,b * sprite_shade,a}
-					sprite_strip_index = sprite_strip_index + 1
-				end	
-				sprite_texture_y = sprite_texture_y - (sprite_size / scale)
-				
-				if sprite_texture_y < 0 then
-					sprite_texture_y = 0
-				end
-			end
+			if self.depth[math.floor(x/self.quality) + 1] ~= nil and 
+			b > 10 and b < self.depth[math.floor(x/self.quality) + 1] and 
+			sprites_table[index].state == 1 then
+				local sprites_quad = love.graphics.newQuad(sprite_texture_x - 0.5, 0, 1, 16, sprites_image_convert)
+				love.graphics.draw(sprites_image_convert, sprites_quad, math.floor(self.x + x), math.floor(self.y + sprite_y) - scale, 0, 1, scale / sprite_size)
+			end	
 			sprite_texture_x = sprite_texture_x + ((sprite_size)/ scale)
 		end
-		
-		love.graphics.points(sprite_strip)
 	end
 end
 

@@ -1,4 +1,4 @@
--- Spaghettian Ratcity v0.1.5
+-- Spaghettian Ratcity v0.1.6
 
 -- Code written and documented by sushiwt 
 -- and based on the Raycaster tutorials by 3DSage :3
@@ -36,6 +36,7 @@ sky_image = love.image.newImageData("graphics/defaultsky.png")
 sprites_image = love.image.newImageData("graphics/smiley.png")
 
 textures_image_convert = love.graphics.newImage(textures_image)
+sprites_image_convert = love.graphics.newImage(sprites_image)
 
 -- UI Textures
 shooter_image = love.graphics.newImage("graphics/lasershooter.png")
@@ -67,6 +68,7 @@ fps_point = 0
 -- Love2D Functions
 function love.load(dt) 
 	textures_image_convert:setFilter("nearest", "nearest")
+	sprites_image_convert:setFilter("nearest", "nearest")
     shooter_image:setFilter("nearest", "nearest")
     healthbar_image:setFilter("nearest", "nearest")
 	if game_state == 1 then
@@ -118,7 +120,7 @@ function love.draw()
 
 		-- game_renderer:drawSky(player_meow)
 		game_renderer:drawRaycaster(level_meow, player_meow)
-		-- game_renderer:drawSprites(sprites, player_meow)
+		game_renderer:drawSprites(sprites, player_meow)
 		
 		love.graphics.draw(shooter_image, game_renderer.width - 180, game_renderer.height - 128,  0, 4)
 		love.graphics.draw(healthbar_image, 32, game_renderer.height - 128 , 0, 3)
