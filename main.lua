@@ -35,8 +35,7 @@ textures_image = love.image.newImageData("graphics/defaulttexture.png")
 sky_image = love.image.newImageData("graphics/defaultsky.png")
 sprites_image = love.image.newImageData("graphics/smiley.png")
 
-
-texte = love.graphics.newImage("graphics/defaulttexture.png")
+textures_image_convert = love.graphics.newImage(textures_image)
 
 -- UI Textures
 shooter_image = love.graphics.newImage("graphics/lasershooter.png")
@@ -52,7 +51,7 @@ delta_time = 0
 sprites = {}
 
 -- Level initialization. 
-level = "homse1"
+level = "house1"
 invalid_level = false
 
 -- Game States
@@ -67,7 +66,7 @@ fps_point = 0
 
 -- Love2D Functions
 function love.load(dt) 
-	texte:setFilter("nearest", "nearest")
+	textures_image_convert:setFilter("nearest", "nearest")
     shooter_image:setFilter("nearest", "nearest")
     healthbar_image:setFilter("nearest", "nearest")
 	if game_state == 1 then
@@ -129,7 +128,6 @@ function love.draw()
 			drawTopDownView()
 		end
 
-		
 		love.graphics.print(math.floor(player_meow.x) .. ", " .. math.floor(player_meow.y), ui_offset_x, ui_offset_y)
 		print(debug_number)
 
@@ -146,7 +144,7 @@ function love.draw()
 	end
 	
 	love.graphics.setLineWidth(1)
-	showFpsGraph(16,128,240, 128)
+	showFpsGraph(16,16,240, 128)
 end
 
 function love.keypressed(key, scancode, isrepeat)

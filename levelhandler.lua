@@ -49,6 +49,8 @@ function levelhandler:loadLevel(level_name, render_object, player_object)
 						player_object.y = tonumber(value)
 					elseif level_info == "texture" then
 						textures_image = love.image.newImageData("graphics/" .. value .. ".png")
+						textures_image_convert = love.graphics.newImage(textures_image)
+						textures_image_convert:setFilter("nearest", "nearest")
 					elseif level_info == "sky" then
 						sky_image = love.image.newImageData("graphics/" .. value .. ".png")
 					elseif level_info == "fog" then
