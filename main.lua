@@ -19,7 +19,7 @@ pi_half = pi / 2
 local game_renderer = require("render")
 local player_meow = require("player")
 local level_meow = require("levelhandler")
-local sprite_meow = require("spritehandler")
+local object_meow = require("objecthandler")
 
 level_topdown_toggle = false
 mouse_controls = true
@@ -33,10 +33,10 @@ ui_offset_y = 400
 -- Map Textures
 textures_image = love.image.newImageData("graphics/defaulttexture.png")
 sky_image = love.image.newImageData("graphics/defaultsky.png")
-sprites_image = love.image.newImageData("graphics/smiley.png")
+objects_image = love.image.newImageData("graphics/smiley.png")
 
 textures_image_convert = love.graphics.newImage(textures_image)
-sprites_image_convert = love.graphics.newImage(sprites_image)
+objects_image_convert = love.graphics.newImage(objects_image)
 
 -- UI Textures
 shooter_image = love.graphics.newImage("graphics/lasershooter.png")
@@ -49,7 +49,7 @@ debug_number2 = 0
 fps = 0
 delta_time = 0
 
-sprites = {}
+objects = {}
 
 -- Level initialization. 
 level = "house1"
@@ -68,7 +68,7 @@ fps_point = 0
 -- Love2D Functions
 function love.load(dt) 
 	textures_image_convert:setFilter("nearest", "nearest")
-	sprites_image_convert:setFilter("nearest", "nearest")
+	objects_image_convert:setFilter("nearest", "nearest")
     shooter_image:setFilter("nearest", "nearest")
     healthbar_image:setFilter("nearest", "nearest")
 	if game_state == 1 then
@@ -79,7 +79,7 @@ end
 function love.update(dt)
 	if game_state == 1 then
 		player_meow:updateControls(dt, level_meow)
-		sprite_meow.updateSprite(sprites, player_meow, game_renderer)
+		object_meow.updateObject(objects, player_meow, game_renderer)
 
 		
 		-- Triggers
@@ -120,7 +120,7 @@ function love.draw()
 
 		-- game_renderer:drawSky(player_meow)
 		game_renderer:drawRaycaster(level_meow, player_meow)
-		game_renderer:drawSprites(sprites, player_meow)
+		game_renderer:drawObjects(objects, player_meow)
 		
 		love.graphics.draw(shooter_image, game_renderer.width - 180, game_renderer.height - 128,  0, 4)
 		love.graphics.draw(healthbar_image, 32, game_renderer.height - 128 , 0, 3)
@@ -201,9 +201,9 @@ function initializeGame()
 		love.mouse.setVisible(false)
 	end
 	
-	sprites[1] = sprite_meow.createSprite(2, 1, 0, level_meow.cell_size * 3.5, level_meow.cell_size * 2, 8)
-	sprites[2] = sprite_meow.createSprite(1, 1, 1, level_meow.cell_size * 4.5, level_meow.cell_size * 2, 8)
-	sprites[3] = sprite_meow.createSprite(1, 1, 0, level_meow.cell_size * 5.5, level_meow.cell_size * 2, 8)
+	objects[1] = object_meow.createObject(2, 1, 0, level_meow.cell_size * 3.5, level_meow.cell_size * 2, 8)
+	objects[2] = object_meow.createObject(1, 1, 1, level_meow.cell_size * 4.5, level_meow.cell_size * 2, 8)
+	objects[3] = object_meow.createObject(1, 1, 0, level_meow.cell_size * 5.5, level_meow.cell_size * 2, 8)
 	
 	-- Load level if levels are available
 	if love.filesystem.getInfo("levels/" .. level .. ".srl") then

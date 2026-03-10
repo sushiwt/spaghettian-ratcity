@@ -18,7 +18,7 @@ render.fog = 0
 render.quality = 1 -- Calculates how wide each segment of the screen would be for the rays
 render.floor_quality = 2
 render.field_of_view = 75 -- The amount of area the player can see
-render.depth = {} -- Contains each rays distance value for sprite occlusion
+render.depth = {} -- Contains each rays distance value for object occlusion
 
 render.wall_layer = {}
 render.floor_layer = {}
@@ -353,55 +353,55 @@ function render:drawRaycaster(level_object, player_object)
 	end
 end
 
-function render:drawSprites(sprites_table, player_object) 
-	for index, value in ipairs(sprites_table) do
-		local sprite_x = sprites_table[index].x -  player_object.x
-		local sprite_y = sprites_table[index].y -  player_object.y
-		local sprite_z = sprites_table[index].z
+function render:drawObjects(objects_table, player_object) 
+	for index, value in ipairs(objects_table) do
+		local object_x = objects_table[index].x -  player_object.x
+		local object_y = objects_table[index].y -  player_object.y
+		local object_z = objects_table[index].z
 		
 		local CS = math.cos(player_object.angle)
 		local SS = -math.sin(player_object.angle)
 		
-		local a = sprite_y * CS + sprite_x * SS
-		local b = sprite_x * CS - sprite_y * SS
-		sprite_x = a
-		sprite_y = b
+		local a = object_y * CS + object_x * SS
+		local b = object_x * CS - object_y * SS
+		object_x = a
+		object_y = b
 		
 		local epsilon = 0.1
 		
-		sprite_x = (sprite_x * (self.width / 1.4) / (sprite_y + epsilon))+(self.width/2)
-		sprite_y = (sprite_z * (self.width / 1.4) / (sprite_y + epsilon))+(self.height/2)
+		object_x = (object_x * (self.width / 1.4) / (object_y + epsilon))+(self.width/2)
+		object_y = (object_z * (self.width / 1.4) / (object_y + epsilon))+(self.height/2)
 		
-		local sprite_size = 16 
-		local scale = (sprite_size * self.height / (b + epsilon))
-		local sprite_texture_x = 0
-		local sprite_texture_y = 16
+		local object_size = 16 
+		local scale = (object_size * self.height / (b + epsilon))
+		local object_texture_x = 0
+		local object_texture_y = 16
 		
-		local sprite_quality = 0
-		local sprite_shade = 1
+		local object_quality = 0
+		local object_shade = 1
 
 		if b < 25 then
-			sprite_quality = (1 / (b + epsilon)) * 25
+			object_quality = (1 / (b + epsilon)) * 25
 		end
 		
 		if self.fog > 0 then
-			sprite_shade = math.min(1 / (b + epsilon) * (self.fog * 25), 1)
+			object_shade = math.min(1 / (b + epsilon) * (self.fog * 25), 1)
 		end
 		
-		local sprite_strip = {}
-		local sprite_strip_index = 0
+		local object_strip = {}
+		local object_strip_index = 0
 		
-		for x = sprite_x - scale / 2, sprite_x + scale / 2, self.quality + sprite_quality do
+		for x = object_x - scale / 2, object_x + scale / 2, self.quality + object_quality do
 			-- The third condition is a failsafe to not cause an out of bounds error,
-			-- but it refuses to draw the rest of the sprite because of it.
+			-- but it refuses to draw the rest of the object because of it.
 			-- Fix it later
 			if self.depth[math.floor(x/self.quality) + 1] ~= nil and 
 			b > 10 and b < self.depth[math.floor(x/self.quality) + 1] and 
-			sprites_table[index].state == 1 then
-				local sprites_quad = love.graphics.newQuad(sprite_texture_x - 0.5, 0, 1, 16, sprites_image_convert)
-				love.graphics.draw(sprites_image_convert, sprites_quad, math.floor(self.x + x), math.floor(self.y + sprite_y) - scale, 0, 1, scale / sprite_size)
+			objects_table[index].state == 1 then
+				local objects_quad = love.graphics.newQuad(object_texture_x - 0.5, 0, 1, 16, objects_image_convert)
+				love.graphics.draw(objects_image_convert, objects_quad, math.floor(self.x + x), math.floor(self.y + object_y) - scale, 0, 1, scale / object_size)
 			end	
-			sprite_texture_x = sprite_texture_x + ((sprite_size)/ scale)
+			object_texture_x = object_texture_x + ((object_size)/ scale)
 		end
 	end
 end
