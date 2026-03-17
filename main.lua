@@ -27,8 +27,9 @@ mouse_controls = true
 -- Gun Settings
 player_shoot = false
 
-ui_offset_x = 0
-ui_offset_y = 400
+ui_offset_x = 32
+ui_offset_y = 260
+ui_line_height = 16
 
 -- Map Textures
 textures_image = love.image.newImageData("graphics/defaulttexture.png")
@@ -56,7 +57,7 @@ level = "house1"
 invalid_level = false
 
 -- Game States
-game_state = 1
+game_state = "game"
 
 -- Main Menus
 menu_option = 0
@@ -71,20 +72,20 @@ function love.load(dt)
 	objects_image_convert:setFilter("nearest", "nearest")
     shooter_image:setFilter("nearest", "nearest")
     healthbar_image:setFilter("nearest", "nearest")
-	if game_state == 1 then
+	if game_state == "game" then
 		initializeGame()
 	end
 end
 
 function love.update(dt)
-	if game_state == 1 then
+	if game_state == "game" then
 		player_meow:updateControls(dt, level_meow)
 		object_meow.updateObject(objects, player_meow, game_renderer)
 
 		
 		-- Triggers
 		if math.floor(player_meow.x / level_meow.cell_size) == 1 and math.floor(player_meow.y / level_meow.cell_size) == 5 then
-			game_state = 2
+			game_state = "win"
 		end
 
 		if love.keyboard.isDown("o") then
@@ -108,14 +109,16 @@ function love.update(dt)
 end
 
 function love.draw()
-	if game_state == 0 then
-		love.graphics.print("Spaghettian Ratcity (Test Menu)", 0, 0)
-		love.graphics.print(">", 0, 32 + (menu_option * 16))
-		love.graphics.print("    Play" , 0, 32)
-		love.graphics.print("    Options" , 0, 48)
-		love.graphics.print("    Quit" , 0, 64)
+	if game_state == "menu" then
+		local menu_margin = 10
 
-	elseif game_state == 1 then
+		love.graphics.print("Spaghettian Ratcity (Test Menu)", menu_margin, menu_margin)
+		love.graphics.print(">", 0 + menu_margin, 32 + (menu_option * 16) + menu_margin)
+		love.graphics.print("    Play" , 0 + menu_margin, 32 + menu_margin)
+		love.graphics.print("    Options" , 0 + menu_margin, 48 + menu_margin)
+		love.graphics.print("    Quit" , 0 + menu_margin, 64 + menu_margin)
+
+	elseif game_state == "game" then
 		love.graphics.setPointSize(game_renderer.quality)
 
 		-- game_renderer:drawSky(player_meow)
@@ -123,14 +126,18 @@ function love.draw()
 		game_renderer:drawObjects(objects, player_meow)
 		
 		love.graphics.draw(shooter_image, game_renderer.width - 180, game_renderer.height - 128,  0, 4)
-		love.graphics.draw(healthbar_image, 32, game_renderer.height - 128 , 0, 3)
 		love.graphics.draw(crosshair_image, game_renderer.center_width - 15, game_renderer.center_height - 15)
+		-- love.graphics.draw(healthbar_image, 32, game_renderer.height - 128 , 0, 3)
+		
+		love.graphics.print("Name: Pelvis", ui_offset_x, ui_offset_y)
+		love.graphics.print("HP: " .. player_meow.hp .. "/" .. player_meow.max_hp, ui_offset_x, ui_offset_y + ui_line_height)
+		love.graphics.print("Ammo: " .. player_meow.ammo .. "/" .. player_meow.inventory_ammo, ui_offset_x, ui_offset_y + ui_line_height * 2)
+		love.graphics.print("Position: " .. math.floor(player_meow.x) .. ", " .. math.floor(player_meow.y), ui_offset_x, ui_offset_y + ui_line_height * 3)
 
 		if level_topdown_toggle then
 			drawTopDownView()
 		end
 
-		love.graphics.print(math.floor(player_meow.x) .. ", " .. math.floor(player_meow.y), ui_offset_x, ui_offset_y)
 		print(debug_number)
 
 		if invalid_level then
@@ -139,38 +146,44 @@ function love.draw()
 			love.graphics.setColor(1,1,1)
 			love.graphics.print("If you're seeing this, the program tried \nto load a level that doesnt exist, " .. level .. ".srl,\nand it failed. \n\nCheck the levels/ directory.", 0, 0)
 		end
-	elseif game_state == 2 then
+
+		love.graphics.setLineWidth(1)
+		showFpsGraph(16,16,240, 128)
+
+	elseif game_state == "options" then 
+		love.graphics.print("Options!!!! Change your Settinsg here!!!", 0, 0)
+	elseif game_state == "win" then
 		love.graphics.print("You win! (Win Screen Test)", 0, 0)
-	elseif game_state == 3 then
+	elseif game_state == "lose" then
 		love.graphics.print("You lose! (Lose Screen Test)", 0, 0)
 	end
 	
-	love.graphics.setLineWidth(1)
-	showFpsGraph(16,16,240, 128)
 end
 
 function love.keypressed(key, scancode, isrepeat)
    	if key == "escape" then
 		love.mouse.setGrabbed(false)
 		love.mouse.setVisible(true)
-		game_state = 0
+		game_state = "menu"
 
   	end
 
-	if game_state == 0 then
+	if game_state == "menu" then
 		if key == "down" and menu_option < 2 then
 			menu_option = menu_option + 1
 		elseif key == "up" and menu_option > 0 then
 			menu_option = menu_option - 1
-		elseif key == "z" then
+		elseif key == "z" or key == "return" then
 			if menu_option == 0 then
-				game_state = 1
+				game_state = "game"
 				initializeGame()
+			elseif menu_option == 1 then
+				game_state = "options"
 			elseif menu_option == 2 then
 				love.event.quit()
 			end
 		end
-	elseif game_state == 1 then
+	elseif game_state == "game" then
 		if key == "u" then
 				if game_renderer.fog < 10 then
 					game_renderer.fog = game_renderer.fog + 1
@@ -201,9 +214,9 @@ function initializeGame()
 		love.mouse.setVisible(false)
 	end
 	
-	objects[1] = object_meow.createObject(2, 1, 0, level_meow.cell_size * 3.5, level_meow.cell_size * 2, 8)
-	objects[2] = object_meow.createObject(1, 1, 1, level_meow.cell_size * 4.5, level_meow.cell_size * 2, 8)
-	objects[3] = object_meow.createObject(1, 1, 0, level_meow.cell_size * 5.5, level_meow.cell_size * 2, 8)
+	objects[1] = object_meow.createObject("enemy", 1, 0, level_meow.cell_size * 3.5, level_meow.cell_size * 2, 8)
+	objects[2] = object_meow.createObject("pickup", 1, 1, level_meow.cell_size * 4.5, level_meow.cell_size * 2, 8)
+	objects[3] = object_meow.createObject("pickup", 1, 0, level_meow.cell_size * 5.5, level_meow.cell_size * 2, 8)
 	
 	-- Load level if levels are available
 	if love.filesystem.getInfo("levels/" .. level .. ".srl") then

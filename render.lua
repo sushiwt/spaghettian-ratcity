@@ -16,7 +16,7 @@ render.dof_value = 16
 render.fog = 0
 
 render.quality = 1 -- Calculates how wide each segment of the screen would be for the rays
-render.floor_quality = 2
+render.floor_quality = 1
 render.field_of_view = 75 -- The amount of area the player can see
 render.depth = {} -- Contains each rays distance value for object occlusion
 
@@ -390,6 +390,10 @@ function render:drawObjects(objects_table, player_object)
 		
 		local object_strip = {}
 		local object_strip_index = 0
+
+		local sprite_fog = 1 / (b / (10^self.fog))
+		love.graphics.setColor(sprite_fog,sprite_fog,sprite_fog,1)
+
 		
 		for x = object_x - scale / 2, object_x + scale / 2, self.quality + object_quality do
 			-- The third condition is a failsafe to not cause an out of bounds error,
@@ -403,6 +407,8 @@ function render:drawObjects(objects_table, player_object)
 			end	
 			object_texture_x = object_texture_x + ((object_size)/ scale)
 		end
+
+		love.graphics.setColor(1,1,1)
 	end
 end
 

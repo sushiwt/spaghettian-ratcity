@@ -14,6 +14,10 @@ player.speed_multiplier = 50
 player.max_hp = 100
 player.hp = 100
 
+player.max_ammo = 30 -- The number of ammo you can shoot before needing to reload
+player.inventory_ammo = 120 --  The amount of ammo you have on your person
+player.ammo = 15 -- The ammo you use to shoot
+
 function player:updateControls(dt, level_object) 
 	-- Player Movement
 	

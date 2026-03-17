@@ -24,12 +24,19 @@ function objecthandler.updateObject(objects_table, player_object, render_object)
 		local SS = -math.sin(player_object.angle)
 		
 		local a = object_y * CS + object_x * SS
+		local b = object_x * CS - object_y * SS
+		object_y = b
+		
+		local epsilon = 0.1
 
 		object_x = (a * (render_object.width / 1.4) / (object_y + 1))+(render_object.width/2)
 
 		local bounds = 12
 
-		if objects_table[index].type == 1 then
+		local object_size = 16 
+		local scale = (object_size * render_object.height / (b + epsilon))
+
+		if objects_table[index].type == "pickup" then
 			if objects_table[index].state == 1 then
 				if player_object.x < objects_table[index].x + bounds and
 					player_object.x > objects_table[index].x - bounds and
@@ -38,23 +45,23 @@ function objecthandler.updateObject(objects_table, player_object, render_object)
 					objects_table[index].state = 0
 				end
 			end
-		elseif objects_table[index].type == 2 then
+		elseif objects_table[index].type == "enemy" then
 			if objects_table[index].state == 1 then
 				if objects_table[index].x > player_object.x then
-					objects_table[index].x = objects_table[index].x - 0.01
+					objects_table[index].x = objects_table[index].x - 0.05
 				end
 				if objects_table[index].x < player_object.x then
-					objects_table[index].x = objects_table[index].x + 0.01
+					objects_table[index].x = objects_table[index].x + 0.05
 				end
 				if objects_table[index].y > player_object.y then
-					objects_table[index].y = objects_table[index].y - 0.01
+					objects_table[index].y = objects_table[index].y - 0.05
 				end
 				if objects_table[index].y < player_object.y then
-					objects_table[index].y = objects_table[index].y + 0.01
+					objects_table[index].y = objects_table[index].y + 0.05
 				end
 			end
 
-			if player_shoot and object_x > render_object.center_width - 20 and object_x < render_object.center_width + 20 then
+			if player_shoot and render_object.center_width > object_x - scale / 2 and render_object.center_width < object_x + scale / 2 and b < render_object.depth[math.floor(#render_object.depth / 2)]then
 				objects_table[index].state = 0
 			end
 			player_shoot = false
