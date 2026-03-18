@@ -66,6 +66,8 @@ menu_option = 0
 fps_graph = {0,0}
 fps_point = 0
 
+player_average = 0
+
 -- Love2D Functions
 function love.load(dt) 
 	textures_image_convert:setFilter("nearest", "nearest")
@@ -78,10 +80,10 @@ function love.load(dt)
 end
 
 function love.update(dt)
+
 	if game_state == "game" then
 		player_meow:updateControls(dt, level_meow)
 		object_meow.updateObject(objects, player_meow, game_renderer)
-
 		
 		-- Triggers
 		if math.floor(player_meow.x / level_meow.cell_size) == 1 and math.floor(player_meow.y / level_meow.cell_size) == 5 then
@@ -133,6 +135,7 @@ function love.draw()
 		love.graphics.print("HP: " .. player_meow.hp .. "/" .. player_meow.max_hp, ui_offset_x, ui_offset_y + ui_line_height)
 		love.graphics.print("Ammo: " .. player_meow.ammo .. "/" .. player_meow.inventory_ammo, ui_offset_x, ui_offset_y + ui_line_height * 2)
 		love.graphics.print("Position: " .. math.floor(player_meow.x) .. ", " .. math.floor(player_meow.y), ui_offset_x, ui_offset_y + ui_line_height * 3)
+		love.graphics.print("AverageDebug: " .. player_average, ui_offset_x, ui_offset_y + ui_line_height * 4)
 
 		if level_topdown_toggle then
 			drawTopDownView()
@@ -166,7 +169,7 @@ function love.keypressed(key, scancode, isrepeat)
 		love.mouse.setVisible(true)
 		game_state = "menu"
 
-  	end
+  	end 
 
 	if game_state == "menu" then
 		if key == "down" and menu_option < 2 then
@@ -211,7 +214,7 @@ function initializeGame()
 	player_meow.delta_y = math.sin(player_meow.angle) * player_meow.speed
 	if mouse_controls then
 		love.mouse.setGrabbed(true)
-		love.mouse.setVisible(false)
+		love.mouse.setVisible(false) 
 	end
 	
 	objects[1] = object_meow.createObject("enemy", 1, 0, level_meow.cell_size * 3.5, level_meow.cell_size * 2, 8)

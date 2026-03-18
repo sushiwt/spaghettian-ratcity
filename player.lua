@@ -18,6 +18,20 @@ player.max_ammo = 30 -- The number of ammo you can shoot before needing to reloa
 player.inventory_ammo = 120 --  The amount of ammo you have on your person
 player.ammo = 15 -- The ammo you use to shoot
 
+player.mouse_poll = {0,0,0,0}
+
+function averageTable(table)
+	local result = 0.0
+
+	for index, value in ipairs(table) do
+		if value ~= 0 then
+			result = value
+		end
+	end
+
+	return result
+end
+
 function player:updateControls(dt, level_object) 
 	-- Player Movement
 	
@@ -42,15 +56,24 @@ function player:updateControls(dt, level_object)
 	-- Mouse Turn
 	
 	if mouse_controls == true then
-		self.angle = self.angle + ((love.mouse.getX() - 320) * 0.001) * (dt * self.speed_multiplier)
+
+		table.insert(self.mouse_poll, love.mouse.getX() - 320)
+		table.remove(self.mouse_poll, 1)
+
+		local averaged_mouse = averageTable(self.mouse_poll)
+		player_average = averaged_mouse 
+
+		self.angle = self.angle + (averaged_mouse * 0.001) * (dt * self.speed_multiplier)
 		if self.angle < 0 then
-			self.angle = self.angle + 2 * pi
+			self.angle = self.angle + 2 * pi 
 		end
 		if self.angle >= 2*pi then
 			self.angle = self.angle - 2 * pi
 		end
 		self.delta_x = math.cos(self.angle) * self.speed
 		self.delta_y = math.sin(self.angle) * self.speed
+
+
 		love.mouse.setPosition(320, 240)
 	end
 	
