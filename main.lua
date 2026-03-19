@@ -110,6 +110,8 @@ function love.update(dt)
 
 end
 
+local view_bobbing = 0
+
 function love.draw()
 	if game_state == "menu" then
 		local menu_margin = 10
@@ -123,11 +125,16 @@ function love.draw()
 	elseif game_state == "game" then
 		love.graphics.setPointSize(game_renderer.quality)
 
+		if love.keyboard.isDown("w") or love.keyboard.isDown("s") then 
+			view_bobbing = view_bobbing + 0.1
+		end
+		
 		-- game_renderer:drawSky(player_meow)
 		game_renderer:drawRaycaster(level_meow, player_meow)
 		game_renderer:drawObjects(objects, player_meow)
+
 		
-		love.graphics.draw(shooter_image, game_renderer.width - 180, game_renderer.height - 128,  0, 4)
+		love.graphics.draw(shooter_image, game_renderer.width - 180 + (-8 * math.cos(view_bobbing)), game_renderer.height - 128 + (-8 * math.abs(math.sin(view_bobbing))) + 8,  0, 4)
 		love.graphics.draw(crosshair_image, game_renderer.center_width - 15, game_renderer.center_height - 15)
 		-- love.graphics.draw(healthbar_image, 32, game_renderer.height - 128 , 0, 3)
 		
@@ -248,9 +255,17 @@ function drawTopDownView(level_object)
 			
 			local vertices = {column_top, row_left, column_top, row_right, column_bottom, row_right, column_bottom, row_left}
 			
-			if column_value > 0 then
-				love.graphics.polygon("fill", vertices)
+			-- if column_value > 0 then
+			-- 	love.graphics.polygon("fill", vertices)
+			-- end
+
+			if (column_value ~= 0) then
+
+				
+				local textureQuad = love.graphics.newQuad(0,level_meow.cell_size * (column_value - 1), level_meow.cell_size, level_meow.cell_size, textures_image_convert)
+				love.graphics.draw(textures_image_convert, textureQuad, column_top, row_left)
 			end
+
 		end
 	end
 	
@@ -260,6 +275,14 @@ function drawTopDownView(level_object)
 	
 	love.graphics.line(game_renderer.width / 2, game_renderer.height / 2, game_renderer.width / 2 + player_meow.delta_x * 10, game_renderer.height / 2 + player_meow.delta_y * 10)
 	
+	love.graphics.setPointSize(8)
+
+	-- Draws the objects
+	for index, object in ipairs(objects) do
+		if object.state ~= 0 then 
+		love.graphics.points(object.x - player_meow.x + (game_renderer.width / 2), object.y - player_meow.y + (game_renderer.height / 2))
+		end
+	end
 end
 
 -- "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\love\love.exe" --console "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\spaghettian-ratcity"
