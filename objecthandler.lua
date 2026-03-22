@@ -48,16 +48,16 @@ function objecthandler.updateObject(objects_table, player_object, render_object)
 		elseif objects_table[index].type == "enemy" then
 			if objects_table[index].state == 1 then
 				if objects_table[index].x > player_object.x then
-					objects_table[index].x = objects_table[index].x - 0.05
+					objects_table[index].x = objects_table[index].x - 0.1
 				end
 				if objects_table[index].x < player_object.x then
-					objects_table[index].x = objects_table[index].x + 0.05
+					objects_table[index].x = objects_table[index].x + 0.1
 				end
 				if objects_table[index].y > player_object.y then
-					objects_table[index].y = objects_table[index].y - 0.05
+					objects_table[index].y = objects_table[index].y - 0.1
 				end
 				if objects_table[index].y < player_object.y then
-					objects_table[index].y = objects_table[index].y + 0.05
+					objects_table[index].y = objects_table[index].y + 0.1
 				end
 			end
 

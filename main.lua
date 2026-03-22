@@ -139,7 +139,7 @@ function love.draw()
 		
 		-- game_renderer:drawSky(player_meow)
 		game_renderer:drawRaycaster(level_meow, player_meow)
-		game_renderer:drawObjects(objects, player_meow)
+		game_renderer:drawObjects(objects, player_meow, level_meow)
 
 		if hud_visible then
 			love.graphics.draw(shooter_image, game_renderer.width - 180 + (-8 * math.cos(view_bobbing)), game_renderer.height - 128 + (-8 * math.abs(math.sin(view_bobbing))) + 8,  0, 4)
@@ -233,7 +233,7 @@ function initializeGame()
 		love.mouse.setVisible(false) 
 	end
 	
-	objects[1] = object_meow.createObject("pickup", 1, 0, level_meow.cell_size * 3.5, level_meow.cell_size * 2, 8)
+	objects[1] = object_meow.createObject("enemy", 1, 0, level_meow.cell_size * 3.5, level_meow.cell_size * 2, 8)
 	objects[2] = object_meow.createObject("pickup", 1, 1, level_meow.cell_size * 4.5, level_meow.cell_size * 2, 8)
 	objects[3] = object_meow.createObject("pickup", 1, 0, level_meow.cell_size * 5.5, level_meow.cell_size * 2, 8)
 	

@@ -317,9 +317,10 @@ function render:drawRaycaster(level_object, player_object)
 		-- 	shade = 10
 		-- end
 		local wall_shade = 0
+		local light_range = 1
 
 		for index, value in ipairs(self.lights) do
-			wall_shade = wall_shade + (1 / (math.abs(point_x - value[1] - level_object.cell_size / 2) / level_object.cell_size + math.abs(point_y - value[2] - level_object.cell_size / 2) / level_object.cell_size))
+			wall_shade = wall_shade + (light_range / (math.abs(point_x - value[1] - level_object.cell_size / 2) / level_object.cell_size + math.abs(point_y - value[2] - level_object.cell_size / 2) / level_object.cell_size))
 		end
 
 		local wall_quad = love.graphics.newQuad(math.floor(texture_x), level_texture * 32, 1, 32, textures_image_convert)
@@ -350,7 +351,7 @@ function render:drawRaycaster(level_object, player_object)
 				local tile_light = 0
 
 				for index, value in ipairs(self.lights) do
-					tile_light = tile_light + (1 / ((math.abs(ground_texture_x - value[1] - 16) / level_object.cell_size) + (math.abs(ground_texture_y - value[2] - 16) / level_object.cell_size) + 1))
+					tile_light = tile_light + (light_range / ((math.abs(ground_texture_x - value[1] - 16) / level_object.cell_size) + (math.abs(ground_texture_y - value[2] - 16) / level_object.cell_size) + 1))
 				end
 
 				-- Failsafe just in case it goes out of bounds
@@ -396,15 +397,12 @@ function render:drawRaycaster(level_object, player_object)
 		love.graphics.points(floor_strip)
 		love.graphics.points(ceiling_strip)
 		
-		if (math.floor(ray_count / 2) == rays) then
-			love.graphics.print(wall_shade, 320, 240, pi/2, 1)
-		end
 		-- Recalculates the ray angle for another added ray to span the field of view.
 		ray_angle = self.fixRadians(ray_angle + ((pi / 180) * (self.field_of_view / ray_count)))
 	end
 end
 
-function render:drawObjects(objects_table, player_object) 
+function render:drawObjects(objects_table, player_object, level_object) 
 	for index, value in ipairs(objects_table) do
 		local object_x = objects_table[index].x -  player_object.x
 		local object_y = objects_table[index].y -  player_object.y
@@ -431,10 +429,6 @@ function render:drawObjects(objects_table, player_object)
 		local object_quality = 0
 		local object_shade = 1
 
-		if b < 25 then
-			object_quality = (1 / (b + epsilon)) * 25
-		end
-		
 		if self.fog > 0 then
 			object_shade = math.min(1 / (b + epsilon) * (self.fog * 25), 1)
 		end
@@ -442,7 +436,16 @@ function render:drawObjects(objects_table, player_object)
 		local object_strip = {}
 		local object_strip_index = 0
 
-		local sprite_fog = 1 / (b / (10^self.fog))
+		local visibility_range = 0.75
+		
+		local sprite_light = 0
+
+		for i, coords in ipairs(self.lights) do
+			sprite_light = sprite_light + (visibility_range / ((math.abs((objects_table[index].x) - coords[1]) / level_object.cell_size) + 
+											    (math.abs((objects_table[index].y) - coords[2]) / level_object.cell_size) + 1))
+		end
+
+		local sprite_fog = sprite_light
 		love.graphics.setColor(sprite_fog,sprite_fog,sprite_fog,1)
 
 		
@@ -458,6 +461,7 @@ function render:drawObjects(objects_table, player_object)
 			end	
 			object_texture_x = object_texture_x + ((object_size)/ scale)
 		end
+
 
 		love.graphics.setColor(1,1,1)
 	end
