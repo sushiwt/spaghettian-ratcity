@@ -2,7 +2,7 @@ lx, 9
 ly, 9
 px, 145
 py, 180
-fog,1
+fog,0
 changetolevel
 walls
 .,.,.,.,.,.,.,.,.

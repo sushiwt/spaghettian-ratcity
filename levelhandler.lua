@@ -62,7 +62,7 @@ function levelhandler:loadLevel(level_name, render_object, player_object)
 				-- Checks if the value is a number or an empty space "." 
 				-- If both conditions aren't true, it assumes that a new layer 
 				-- is being set up. Might change this later. 
-				if tonumber(value) then
+			if tonumber(value) then
 					table.insert(level_row, tonumber(value) + 1)
 				elseif value == "." then
 					table.insert(level_row, 0)

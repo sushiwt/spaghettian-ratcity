@@ -28,8 +28,9 @@ mouse_controls = true
 player_shoot = false
 
 ui_offset_x = 32
-ui_offset_y = 260
-ui_line_height = 16
+ui_offset_y = 200
+
+hud_visible = false
 
 -- Map Textures
 textures_image = love.image.newImageData("graphics/defaulttexture.png")
@@ -57,10 +58,12 @@ level = "house1"
 invalid_level = false
 
 -- Game States
-game_state = "game"
+game_state = "menu"
 
 -- Main Menus
 menu_option = 0
+ui_font_size = 32
+ui_line_height = 32
 
 -- For drawing the fps graph...
 fps_graph = {0,0}
@@ -74,6 +77,9 @@ function love.load(dt)
 	objects_image_convert:setFilter("nearest", "nearest")
     shooter_image:setFilter("nearest", "nearest")
     healthbar_image:setFilter("nearest", "nearest")
+
+	myFont = love.graphics.newFont("graphics/minitext.ttf", ui_font_size)
+
 	if game_state == "game" then
 		initializeGame()
 	end
@@ -113,14 +119,16 @@ end
 local view_bobbing = 0
 
 function love.draw()
+	love.graphics.setFont(myFont)
+
 	if game_state == "menu" then
 		local menu_margin = 10
 
 		love.graphics.print("Spaghettian Ratcity (Test Menu)", menu_margin, menu_margin)
-		love.graphics.print(">", 0 + menu_margin, 32 + (menu_option * 16) + menu_margin)
-		love.graphics.print("    Play" , 0 + menu_margin, 32 + menu_margin)
-		love.graphics.print("    Options" , 0 + menu_margin, 48 + menu_margin)
-		love.graphics.print("    Quit" , 0 + menu_margin, 64 + menu_margin)
+		love.graphics.print(">", 0 + menu_margin, (ui_font_size * 2) + (menu_option * (ui_font_size)) + menu_margin)
+		love.graphics.print("  Play" , 0 + menu_margin, (ui_font_size * 2) + menu_margin)
+		love.graphics.print("  Options" , 0 + menu_margin, (ui_font_size * 3) + menu_margin)
+		love.graphics.print("  Quit" , 0 + menu_margin, (ui_font_size * 4) + menu_margin)
 
 	elseif game_state == "game" then
 		love.graphics.setPointSize(game_renderer.quality)
@@ -133,16 +141,20 @@ function love.draw()
 		game_renderer:drawRaycaster(level_meow, player_meow)
 		game_renderer:drawObjects(objects, player_meow)
 
-		
-		love.graphics.draw(shooter_image, game_renderer.width - 180 + (-8 * math.cos(view_bobbing)), game_renderer.height - 128 + (-8 * math.abs(math.sin(view_bobbing))) + 8,  0, 4)
-		love.graphics.draw(crosshair_image, game_renderer.center_width - 15, game_renderer.center_height - 15)
-		-- love.graphics.draw(healthbar_image, 32, game_renderer.height - 128 , 0, 3)
-		
-		love.graphics.print("Name: Pelvis", ui_offset_x, ui_offset_y)
-		love.graphics.print("HP: " .. player_meow.hp .. "/" .. player_meow.max_hp, ui_offset_x, ui_offset_y + ui_line_height)
-		love.graphics.print("Ammo: " .. player_meow.ammo .. "/" .. player_meow.inventory_ammo, ui_offset_x, ui_offset_y + ui_line_height * 2)
-		love.graphics.print("Position: " .. math.floor(player_meow.x) .. ", " .. math.floor(player_meow.y), ui_offset_x, ui_offset_y + ui_line_height * 3)
-		love.graphics.print("AverageDebug: " .. player_average, ui_offset_x, ui_offset_y + ui_line_height * 4)
+		if hud_visible then
+			love.graphics.draw(shooter_image, game_renderer.width - 180 + (-8 * math.cos(view_bobbing)), game_renderer.height - 128 + (-8 * math.abs(math.sin(view_bobbing))) + 8,  0, 4)
+			love.graphics.draw(crosshair_image, game_renderer.center_width - 15, game_renderer.center_height - 15)
+			-- love.graphics.draw(healthbar_image, 32, game_renderer.height - 128 , 0, 3)
+			
+			love.graphics.print("Name: Pelvis", ui_offset_x, ui_offset_y)
+			love.graphics.print("HP: " .. player_meow.hp .. "/" .. player_meow.max_hp, ui_offset_x, ui_offset_y + ui_line_height)
+			love.graphics.print("Ammo: " .. player_meow.ammo .. "/" .. player_meow.inventory_ammo, ui_offset_x, ui_offset_y + ui_line_height * 2)
+			love.graphics.print("Position: " .. math.floor(player_meow.x) .. ", " .. math.floor(player_meow.y), ui_offset_x, ui_offset_y + ui_line_height * 3)
+			love.graphics.print("AverageDebug: " .. player_average, ui_offset_x, ui_offset_y + ui_line_height * 4)
+
+			love.graphics.setLineWidth(1)
+			showFpsGraph(16,16,240, 128)
+		end
 
 		if level_topdown_toggle then
 			drawTopDownView()
@@ -156,9 +168,6 @@ function love.draw()
 			love.graphics.setColor(1,1,1)
 			love.graphics.print("If you're seeing this, the program tried \nto load a level that doesnt exist, " .. level .. ".srl,\nand it failed. \n\nCheck the levels/ directory.", 0, 0)
 		end
-
-		love.graphics.setLineWidth(1)
-		showFpsGraph(16,16,240, 128)
 
 	elseif game_state == "options" then 
 		love.graphics.print("Options!!!! Change your Settinsg here!!!", 0, 0)
@@ -224,7 +233,7 @@ function initializeGame()
 		love.mouse.setVisible(false) 
 	end
 	
-	objects[1] = object_meow.createObject("enemy", 1, 0, level_meow.cell_size * 3.5, level_meow.cell_size * 2, 8)
+	objects[1] = object_meow.createObject("pickup", 1, 0, level_meow.cell_size * 3.5, level_meow.cell_size * 2, 8)
 	objects[2] = object_meow.createObject("pickup", 1, 1, level_meow.cell_size * 4.5, level_meow.cell_size * 2, 8)
 	objects[3] = object_meow.createObject("pickup", 1, 0, level_meow.cell_size * 5.5, level_meow.cell_size * 2, 8)
 	

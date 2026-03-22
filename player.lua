@@ -22,6 +22,7 @@ player.mouse_poll = {0,0,0,0}
 
 function averageTable(table)
 	local result = 0.0
+	local index = 0
 
 	for index, value in ipairs(table) do
 		if value ~= 0 then
