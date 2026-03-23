@@ -32,6 +32,7 @@ render.light_y = 32
 
 -- Light Coordinates 
 render.lights = {{32,32},{96,96 + 32}}
+render.view_bobbing = 0
 
 function render:drawRaycaster(level_object, player_object)
 	local point_x, point_y, point_x_offset, point_y_offset, depth_of_field
@@ -257,22 +258,22 @@ function render:drawRaycaster(level_object, player_object)
 		-- Lighting 
 		-- Flashlight Mechanic?
 		-- if (math.floor(ray_count / 2) == rays) then
-		-- 	self.light_x = point_x - 16
-		-- 	self.light_y = point_y - 16
+		-- 	self.lights[1][1] = point_x - 16
+		-- 	self.lights[1][2]= point_y - 16
 		-- end
 		
-		-- if love.keyboard.isDown("y") then
-		-- 	self.light_y = self.light_y + 0.001
-		-- end
-		-- if love.keyboard.isDown("h") then
-		-- 	self.light_y = self.light_y - 0.001
-		-- end
-		-- if love.keyboard.isDown("g") then
-		-- 	self.light_x = self.light_x + 0.001
-		-- end
-		-- if love.keyboard.isDown("j") then
-		-- 	self.light_x = self.light_x - 0.001
-		-- end
+		if love.keyboard.isDown("y") then
+			self.lights[1][1] = self.lights[1][1] + 0.001
+		end
+		if love.keyboard.isDown("h") then
+			self.lights[1][1] = self.lights[1][1] - 0.001
+		end
+		if love.keyboard.isDown("g") then
+			self.lights[1][2] = self.lights[1][2] + 0.001
+		end
+		if love.keyboard.isDown("j") then
+			self.lights[1][2] = self.lights[1][2] - 0.001
+		end
 
 		-- DRAW WALLS
 		-- Add way to change texture size later. 32x32 is the size of the textures
@@ -319,9 +320,12 @@ function render:drawRaycaster(level_object, player_object)
 		local wall_shade = 0
 		local light_range = 1
 
-		for index, value in ipairs(self.lights) do
-			wall_shade = wall_shade + (light_range / (math.abs(point_x - value[1] - level_object.cell_size / 2) / level_object.cell_size + math.abs(point_y - value[2] - level_object.cell_size / 2) / level_object.cell_size))
-		end
+		wall_shade = self.calculateLighting(self.lights, point_x - level_object.cell_size / 2, point_y - level_object.cell_size / 2, level_object.cell_size, light_range)
+
+		-- for index, value in ipairs(self.lights) do
+		-- 	wall_shade = wall_shade + (light_range / (math.abs(point_x - value[1] - level_object.cell_size / 2) / level_object.cell_size + math.abs(point_y - value[2] - level_object.cell_size / 2) / level_object.cell_size))
+		-- end
+		
 
 		local wall_quad = love.graphics.newQuad(math.floor(texture_x), level_texture * 32, 1, 32, textures_image_convert)
 		-- Completely different wall rendering engine btw
@@ -350,9 +354,7 @@ function render:drawRaycaster(level_object, player_object)
 				
 				local tile_light = 0
 
-				for index, value in ipairs(self.lights) do
-					tile_light = tile_light + (light_range / ((math.abs(ground_texture_x - value[1] - 16) / level_object.cell_size) + (math.abs(ground_texture_y - value[2] - 16) / level_object.cell_size) + 1))
-				end
+				tile_light = self.calculateLighting(self.lights, ground_texture_x - level_object.cell_size / 2, ground_texture_y - level_object.cell_size / 2, level_object.cell_size, 1, 1)
 
 				-- Failsafe just in case it goes out of bounds
 				if ground_texture_x < 0 then ground_texture_x = ground_texture_x % 32  end
@@ -465,6 +467,30 @@ function render:drawObjects(objects_table, player_object, level_object)
 
 		love.graphics.setColor(1,1,1)
 	end
+
+	
+	-- HUD Shooter
+	if love.keyboard.isDown("w") or love.keyboard.isDown("s") then 
+		self.view_bobbing = self.view_bobbing + 0.1
+	end
+
+	local shooter_light = self.calculateLighting(self.lights, player_object.x, player_object.y, level_object.cell_size)
+
+	love.graphics.setColor(shooter_light,shooter_light,shooter_light)
+	love.graphics.draw(shooter_image, self.width - 180 + (-8 * math.cos(self.view_bobbing)), self.height - 128 + (-8 * math.abs(math.sin(self.view_bobbing))) + 8,  0, 4)
+end
+
+function render.calculateLighting(light_coords, subject_x, subject_y, cell_size, light_range, offset) 
+	local light_result = 0
+	light_range = light_range or 1
+	offset = offset or 0
+
+	for i, coords in ipairs(light_coords) do
+		light_result = light_result + (light_range / ((math.abs((subject_x) - coords[1]) / cell_size) + 
+											  (math.abs((subject_y) - coords[2]) / cell_size) + offset))
+	end
+
+	return light_result
 end
 
 function render:drawSky(player_object) 

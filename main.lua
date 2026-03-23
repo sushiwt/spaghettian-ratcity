@@ -30,7 +30,7 @@ player_shoot = false
 ui_offset_x = 32
 ui_offset_y = 200
 
-hud_visible = false
+hud_visible = true
 
 -- Map Textures
 textures_image = love.image.newImageData("graphics/defaulttexture.png")
@@ -44,6 +44,7 @@ objects_image_convert = love.graphics.newImage(objects_image)
 shooter_image = love.graphics.newImage("graphics/lasershooter.png")
 healthbar_image = love.graphics.newImage("graphics/uibar.png")
 crosshair_image = love.graphics.newImage("graphics/crosshair.png")
+background_image = love.graphics.newImage("graphics/menu_background.png")
 
 -- Misc stuff
 debug_number = 0
@@ -116,14 +117,18 @@ function love.update(dt)
 
 end
 
-local view_bobbing = 0
-
 function love.draw()
 	love.graphics.setFont(myFont)
 
 	if game_state == "menu" then
 		local menu_margin = 10
 
+
+		for rows = 0, love.graphics.getWidth() / 64 do 
+			for cols = 0, love.graphics.getHeight() / 64 do
+				love.graphics.draw(background_image, rows * 64, cols * 64,0,2)
+			end
+		end
 		love.graphics.print("Spaghettian Ratcity (Test Menu)", menu_margin, menu_margin)
 		love.graphics.print(">", 0 + menu_margin, (ui_font_size * 2) + (menu_option * (ui_font_size)) + menu_margin)
 		love.graphics.print("  Play" , 0 + menu_margin, (ui_font_size * 2) + menu_margin)
@@ -133,16 +138,13 @@ function love.draw()
 	elseif game_state == "game" then
 		love.graphics.setPointSize(game_renderer.quality)
 
-		if love.keyboard.isDown("w") or love.keyboard.isDown("s") then 
-			view_bobbing = view_bobbing + 0.1
-		end
 		
 		-- game_renderer:drawSky(player_meow)
 		game_renderer:drawRaycaster(level_meow, player_meow)
 		game_renderer:drawObjects(objects, player_meow, level_meow)
 
 		if hud_visible then
-			love.graphics.draw(shooter_image, game_renderer.width - 180 + (-8 * math.cos(view_bobbing)), game_renderer.height - 128 + (-8 * math.abs(math.sin(view_bobbing))) + 8,  0, 4)
+			-- love.graphics.draw(shooter_image, game_renderer.width - 180 + (-8 * math.cos(view_bobbing)), game_renderer.height - 128 + (-8 * math.abs(math.sin(view_bobbing))) + 8,  0, 4)
 			love.graphics.draw(crosshair_image, game_renderer.center_width - 15, game_renderer.center_height - 15)
 			-- love.graphics.draw(healthbar_image, 32, game_renderer.height - 128 , 0, 3)
 			
@@ -314,10 +316,26 @@ function dump(o)
    end
 end
 
+local fps_timer = 0
+local fps_tick = 0
+local fps_average = 0
+local fps_count = 0
+
 function showFpsGraph(x,y, graph_width, graph_height) 
 	table.insert(fps_graph, x + fps_point)
 	table.insert(fps_graph, y + (graph_height - fps))
 	fps_point = fps_point + (delta_time * 100)
+	fps_timer = fps_timer + delta_time
+
+	fps_average = fps_average + fps
+	fps_count = fps_count + 1
+
+	if fps_timer > 0.5 then 
+		fps_tick = math.floor(fps_average / fps_count)
+		fps_timer = 0
+		fps_average = 0
+		fps_count = 0
+	end
 
 	if fps_point > graph_width then
 		fps_point = 0
@@ -327,6 +345,6 @@ function showFpsGraph(x,y, graph_width, graph_height)
 	love.graphics.setColor(0,0,0,0.5)
 	love.graphics.rectangle("fill", x, y, graph_width, graph_height)
 	love.graphics.setColor(1,1,1)
-	love.graphics.print(fps, x, y)
+	love.graphics.print(fps_tick, x, y)
 	love.graphics.line(fps_graph)
 end
