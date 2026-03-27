@@ -78,6 +78,7 @@ function love.load(dt)
 	objects_image_convert:setFilter("nearest", "nearest")
     shooter_image:setFilter("nearest", "nearest")
     healthbar_image:setFilter("nearest", "nearest")
+    background_image:setFilter("nearest", "nearest")
 
 	myFont = love.graphics.newFont("graphics/minitext.ttf", ui_font_size)
 
@@ -117,23 +118,28 @@ function love.update(dt)
 
 end
 
+
 function love.draw()
 	love.graphics.setFont(myFont)
+	local menu_margin = 10
+
 
 	if game_state == "menu" then
-		local menu_margin = 10
-
-
-		for rows = 0, love.graphics.getWidth() / 64 do 
-			for cols = 0, love.graphics.getHeight() / 64 do
-				love.graphics.draw(background_image, rows * 64, cols * 64,0,2)
+		for rows = 0, love.graphics.getWidth() / 128 do 
+			for cols = 0, love.graphics.getHeight() / 128 do
+				love.graphics.draw(background_image, rows * 128, cols * 128,0,4)
 			end
 		end
+
 		love.graphics.print("Spaghettian Ratcity (Test Menu)", menu_margin, menu_margin)
-		love.graphics.print(">", 0 + menu_margin, (ui_font_size * 2) + (menu_option * (ui_font_size)) + menu_margin)
-		love.graphics.print("  Play" , 0 + menu_margin, (ui_font_size * 2) + menu_margin)
-		love.graphics.print("  Options" , 0 + menu_margin, (ui_font_size * 3) + menu_margin)
-		love.graphics.print("  Quit" , 0 + menu_margin, (ui_font_size * 4) + menu_margin)
+		
+		love.graphics.setColor(0,0,0,0.5)
+		love.graphics.rectangle("fill", menu_margin, (ui_font_size * 2) + (menu_option * (ui_font_size)) + menu_margin, 128, 32)
+
+		love.graphics.setColor(1,1,1)
+		love.graphics.print("Play" , 8 + menu_margin, (ui_font_size * 2) + menu_margin)
+		love.graphics.print("Options" , 8 + menu_margin, (ui_font_size * 3) + menu_margin)
+		love.graphics.print("Quit" , 8 + menu_margin, (ui_font_size * 4) + menu_margin)
 
 	elseif game_state == "game" then
 		love.graphics.setPointSize(game_renderer.quality)
@@ -172,11 +178,11 @@ function love.draw()
 		end
 
 	elseif game_state == "options" then 
-		love.graphics.print("Options!!!! Change your Settinsg here!!!", 0, 0)
+		love.graphics.print("Options!!!! Change your Settinsg here!!!", menu_margin, menu_margin)
 	elseif game_state == "win" then
-		love.graphics.print("You win! (Win Screen Test)", 0, 0)
+		love.graphics.print("You win! (Win Screen Test)", menu_margin, menu_margin)
 	elseif game_state == "lose" then
-		love.graphics.print("You lose! (Lose Screen Test)", 0, 0)
+		love.graphics.print("You lose! (Lose Screen Test)", menu_margin, menu_margin)
 	end
 	
 end
@@ -203,6 +209,8 @@ function love.keypressed(key, scancode, isrepeat)
 			elseif menu_option == 2 then
 				love.event.quit()
 			end
+
+			menu_option = 0
 		end
 	elseif game_state == "game" then
 		if key == "u" then

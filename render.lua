@@ -318,9 +318,8 @@ function render:drawRaycaster(level_object, player_object)
 		-- 	shade = 10
 		-- end
 		local wall_shade = 0
-		local light_range = 1
 
-		wall_shade = self.calculateLighting(self.lights, point_x - level_object.cell_size / 2, point_y - level_object.cell_size / 2, level_object.cell_size, light_range)
+		wall_shade = self.calculateLighting(self.lights, point_x - level_object.cell_size / 2, point_y - level_object.cell_size / 2, level_object.cell_size, 1, 1)
 
 		-- for index, value in ipairs(self.lights) do
 		-- 	wall_shade = wall_shade + (light_range / (math.abs(point_x - value[1] - level_object.cell_size / 2) / level_object.cell_size + math.abs(point_y - value[2] - level_object.cell_size / 2) / level_object.cell_size))
@@ -329,7 +328,7 @@ function render:drawRaycaster(level_object, player_object)
 
 		local wall_quad = love.graphics.newQuad(math.floor(texture_x), level_texture * 32, 1, 32, textures_image_convert)
 		-- Completely different wall rendering engine btw
-		love.graphics.setColor(wall_shade - 0.5, wall_shade - 0.5, wall_shade - 0.5,1)
+		love.graphics.setColor(wall_shade, wall_shade, wall_shade,1)
 		love.graphics.draw(textures_image_convert, wall_quad, starting_segment, line_offset - texture_y_offset, 0, 1, unfixed_distance/32)
 		love.graphics.setColor(1,1,1,1)
 		
@@ -465,7 +464,6 @@ function render:drawObjects(objects_table, player_object, level_object)
 		end
 
 
-		love.graphics.setColor(1,1,1)
 	end
 
 	
@@ -478,17 +476,39 @@ function render:drawObjects(objects_table, player_object, level_object)
 
 	love.graphics.setColor(shooter_light,shooter_light,shooter_light)
 	love.graphics.draw(shooter_image, self.width - 180 + (-8 * math.cos(self.view_bobbing)), self.height - 128 + (-8 * math.abs(math.sin(self.view_bobbing))) + 8,  0, 4)
+
+	love.graphics.setColor(1,1,1)
 end
 
-function render.calculateLighting(light_coords, subject_x, subject_y, cell_size, light_range, offset) 
+function render.calculateLighting(light_coords, subject_x, subject_y, cell_size, light_range, multiplier, level_object) 
 	local light_result = 0
 	light_range = light_range or 1
-	offset = offset or 0
+	level_object = level_object or null
 
 	for i, coords in ipairs(light_coords) do
-		light_result = light_result + (light_range / ((math.abs((subject_x) - coords[1]) / cell_size) + 
-											  (math.abs((subject_y) - coords[2]) / cell_size) + offset))
+		local distance = math.pow(((subject_x) - coords[1]) / cell_size,2) + math.pow(((subject_y) - coords[2]) / cell_size,2) 
+		light_result = light_result + (light_range / (distance + 1))
 	end
+
+	-- offset = offset or 0
+
+	-- for i, coords in ipairs(light_coords) do
+	-- 	light_result = light_result + (light_range / ((math.abs((subject_x) - coords[1]) / cell_size) + 
+	-- 										  (math.abs((subject_y) - coords[2]) / cell_size) + offset))
+	-- end
+	
+	-- for i, coords in ipairs(light_coords) do
+	-- 	local distance = (math.sqrt(math.pow(((subject_x) - coords[1]) / cell_size,2) + math.pow(((subject_y) - coords[2]) / cell_size,2)) + offset)
+	-- 	light_result = light_result + math.pow((light_range / distance), 2)
+	-- end
+
+	-- if light_result > 0.5 then 
+	-- 	light_result = 1
+	-- end
+
+	-- if light_result < 0.5 then
+	-- 	light_result = 0
+	-- end
 
 	return light_result
 end
