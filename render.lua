@@ -16,7 +16,7 @@ render.dof_value = 16
 render.fog = 0
 
 render.quality = 1 -- Calculates how wide each segment of the screen would be for the rays
-render.floor_quality = 1
+render.floor_quality = 4
 render.field_of_view = 75 -- The amount of area the player can see
 render.depth = {} -- Contains each rays distance value for object occlusion
 
@@ -319,12 +319,7 @@ function render:drawRaycaster(level_object, player_object)
 		-- end
 		local wall_shade = 0
 
-		wall_shade = self.calculateLighting(self.lights, point_x - level_object.cell_size / 2, point_y - level_object.cell_size / 2, level_object.cell_size, 1, 1)
-
-		-- for index, value in ipairs(self.lights) do
-		-- 	wall_shade = wall_shade + (light_range / (math.abs(point_x - value[1] - level_object.cell_size / 2) / level_object.cell_size + math.abs(point_y - value[2] - level_object.cell_size / 2) / level_object.cell_size))
-		-- end
-		
+		wall_shade = self.calculateLighting(self.lights, point_x - level_object.cell_size / 2, point_y - level_object.cell_size / 2, level_object.cell_size, 1)
 
 		local wall_quad = love.graphics.newQuad(math.floor(texture_x), level_texture * 32, 1, 32, textures_image_convert)
 		-- Completely different wall rendering engine btw
@@ -343,9 +338,10 @@ function render:drawRaycaster(level_object, player_object)
 		local ceiling_strip_index = 0
 		
 		
-		love.graphics.setPointSize(4)
-		if rays % 4 == 0 then
-			for line_y = line_offset+line_height - 2, self.height, 4 do
+		
+		love.graphics.setPointSize(self.floor_quality)
+		if rays % self.floor_quality == 0 then
+			for line_y = line_offset + line_height - 2, self.height, self.floor_quality do
 				local ground_y = line_y - (self.height/2)
 				local r, g, b, a = 0, 0, 0, 1
 				local ground_texture_x = (player_object.x + math.cos(ray_angle) * (floor_ceiling_offset) * 32 / ground_y / fisheye_floor_fix) 
@@ -353,15 +349,15 @@ function render:drawRaycaster(level_object, player_object)
 				
 				local tile_light = 0
 
-				tile_light = self.calculateLighting(self.lights, ground_texture_x - level_object.cell_size / 2, ground_texture_y - level_object.cell_size / 2, level_object.cell_size, 1, 1)
+				tile_light = self.calculateLighting(self.lights, ground_texture_x - level_object.cell_size / 2, ground_texture_y - level_object.cell_size / 2, level_object.cell_size, 1, level_object)
 
 				-- Failsafe just in case it goes out of bounds
-				if ground_texture_x < 0 then ground_texture_x = ground_texture_x % 32  end
-				if ground_texture_y < 0 then ground_texture_y = ground_texture_y % 32 end
-				if ground_texture_x / 32 > level_object.columns then ground_texture_x = ground_texture_x % 32 end
-				if ground_texture_y / 32 > level_object.rows then ground_texture_y = ground_texture_y % 32 end
+				if ground_texture_x < 0 then ground_texture_x = ground_texture_x % level_object.cell_size  end
+				if ground_texture_y < 0 then ground_texture_y = ground_texture_y % level_object.cell_size end
+				if ground_texture_x / level_object.cell_size > level_object.columns then ground_texture_x = ground_texture_x % level_object.cell_size end
+				if ground_texture_y / level_object.cell_size > level_object.rows then ground_texture_y = ground_texture_y % level_object.cell_size end
 				
-				local mp = level_object.floors[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32 -- The multiplier shifts the textures to account for the multiple textures
+				local mp = level_object.floors[1 + math.floor(ground_texture_y / level_object.cell_size)][1 + math.floor(ground_texture_x / level_object.cell_size)]*32 -- The multiplier shifts the textures to account for the multiple textures
 				if mp ~= nil then r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)end
 				
 				-- if (math.floor(ground_texture_x / 32) == 2 and math.floor(ground_texture_y / 32) == 2 ) then
@@ -379,7 +375,7 @@ function render:drawRaycaster(level_object, player_object)
 				floor_strip[floor_strip_index] = {self.x + starting_segment,  self.y + line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
 				floor_strip_index = floor_strip_index + 1
 				
-				mp = level_object.ceilings[1 + math.floor(ground_texture_y / 32)][1 + math.floor(ground_texture_x / 32)]*32
+				mp = level_object.ceilings[1 + math.floor(ground_texture_y / level_object.cell_size)][1 + math.floor(ground_texture_x / level_object.cell_size)]*32
 				
 				if mp ~= nil and mp > 0 then
 					r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)
@@ -449,7 +445,6 @@ function render:drawObjects(objects_table, player_object, level_object)
 		local sprite_fog = sprite_light
 		love.graphics.setColor(sprite_fog,sprite_fog,sprite_fog,1)
 
-		
 		for x = object_x - scale / 2, object_x + scale / 2, self.quality + object_quality do
 			-- The third condition is a failsafe to not cause an out of bounds error,
 			-- but it refuses to draw the rest of the object because of it.
@@ -463,6 +458,7 @@ function render:drawObjects(objects_table, player_object, level_object)
 			object_texture_x = object_texture_x + ((object_size)/ scale)
 		end
 
+		
 
 	end
 
@@ -480,35 +476,18 @@ function render:drawObjects(objects_table, player_object, level_object)
 	love.graphics.setColor(1,1,1)
 end
 
-function render.calculateLighting(light_coords, subject_x, subject_y, cell_size, light_range, multiplier, level_object) 
+function render.calculateLighting(light_coords, subject_x, subject_y, cell_size, light_range, level_object) 
 	local light_result = 0
 	light_range = light_range or 1
-	level_object = level_object or null
+	level_object = level_object or nil
 
 	for i, coords in ipairs(light_coords) do
 		local distance = math.pow(((subject_x) - coords[1]) / cell_size,2) + math.pow(((subject_y) - coords[2]) / cell_size,2) 
-		light_result = light_result + (light_range / (distance + 1))
+		local light_level = (light_range / (distance + 1))
+		
+
+		light_result = light_result + light_level
 	end
-
-	-- offset = offset or 0
-
-	-- for i, coords in ipairs(light_coords) do
-	-- 	light_result = light_result + (light_range / ((math.abs((subject_x) - coords[1]) / cell_size) + 
-	-- 										  (math.abs((subject_y) - coords[2]) / cell_size) + offset))
-	-- end
-	
-	-- for i, coords in ipairs(light_coords) do
-	-- 	local distance = (math.sqrt(math.pow(((subject_x) - coords[1]) / cell_size,2) + math.pow(((subject_y) - coords[2]) / cell_size,2)) + offset)
-	-- 	light_result = light_result + math.pow((light_range / distance), 2)
-	-- end
-
-	-- if light_result > 0.5 then 
-	-- 	light_result = 1
-	-- end
-
-	-- if light_result < 0.5 then
-	-- 	light_result = 0
-	-- end
 
 	return light_result
 end

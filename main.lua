@@ -45,6 +45,7 @@ shooter_image = love.graphics.newImage("graphics/lasershooter.png")
 healthbar_image = love.graphics.newImage("graphics/uibar.png")
 crosshair_image = love.graphics.newImage("graphics/crosshair.png")
 background_image = love.graphics.newImage("graphics/menu_background.png")
+pelvis_image = love.graphics.newImage("graphics/pelvis.png")
 
 -- Misc stuff
 debug_number = 0
@@ -91,8 +92,9 @@ function love.update(dt)
 
 	if game_state == "game" then
 		player_meow:updateControls(dt, level_meow)
-		object_meow.updateObject(objects, player_meow, game_renderer)
+		objects = object_meow.updateObject(objects, player_meow, game_renderer)
 		
+
 		-- Triggers
 		if math.floor(player_meow.x / level_meow.cell_size) == 1 and math.floor(player_meow.y / level_meow.cell_size) == 5 then
 			game_state = "win"
@@ -294,6 +296,9 @@ function drawTopDownView(level_object)
 	
 	love.graphics.line(game_renderer.width / 2, game_renderer.height / 2, game_renderer.width / 2 + player_meow.delta_x * 10, game_renderer.height / 2 + player_meow.delta_y * 10)
 	
+	love.graphics.setColor(1,1,1)
+	love.graphics.draw(pelvis_image, game_renderer.width / 2, game_renderer.height / 2, player_meow.angle - pi/2, 1, 1, 30, 30)
+
 	love.graphics.setPointSize(8)
 
 	-- Draws the objects

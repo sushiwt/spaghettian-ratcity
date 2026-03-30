@@ -18,7 +18,7 @@ player.max_ammo = 30 -- The number of ammo you can shoot before needing to reloa
 player.inventory_ammo = 120 --  The amount of ammo you have on your person
 player.ammo = 15 -- The ammo you use to shoot
 
-player.mouse_poll = {0,0,0,0}
+player.mouse_poll = {0,0}
 
 function averageTable(table)
 	local result = 0.0

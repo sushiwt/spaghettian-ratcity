@@ -9,6 +9,7 @@ function objecthandler.createObject(iType, iState, iTexture, ix, iy, iz)
 		x = ix,
 		y = iy,
 		z = iz,
+		distance = 0
 	}
 end
 
@@ -16,7 +17,10 @@ function objecthandler.updateObject(objects_table, player_object, render_object)
 	-- The render_object parameter is temporary. 
 	-- It's used to check if the object is on the center, but I want to find a better
 	-- way to aim at enemies
+	local ordered_objects = {}
+
 	for index, value in ipairs(objects_table) do
+
 		local object_x = objects_table[index].x - player_object.x
 		local object_y = objects_table[index].y - player_object.y
 		
@@ -65,8 +69,23 @@ function objecthandler.updateObject(objects_table, player_object, render_object)
 				objects_table[index].state = 0
 			end
 			player_shoot = false
+		end	
+		
+		local order_index = 1 --432432423
+		
+		for i, v in ipairs(ordered_objects) do 
+			if v.distance <= b then 
+				break
+			end 
+			order_index = order_index + 1 
 		end
+
+		value.distance = b 
+		
+		table.insert(ordered_objects, order_index, value)
 	end
+
+	return ordered_objects
 end
 
 return objecthandler
