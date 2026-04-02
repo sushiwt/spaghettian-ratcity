@@ -2,16 +2,6 @@ local levelhandler = {}
 
 -- Level properties
 levelhandler.walls = {}
-levelhandler.walls_2 = {{0,0,0,0,0,0,0,0,0},
-						{0,1,1,1,1,1,1,1,0},
-						{0,1,0,0,0,0,0,1,0},
-						{0,1,0,0,0,0,0,1,0},
-						{0,1,0,0,0,0,0,1,0},
-						{0,1,0,0,0,0,0,1,0},
-						{0,1,0,0,0,0,0,1,0},
-						{0,1,1,1,1,1,1,1,0},
-						{0,0,0,0,0,0,0,0,0},
-						}
 levelhandler.floors = {}
 levelhandler.ceilings = {}
 levelhandler.rows = 0

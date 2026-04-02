@@ -77,8 +77,6 @@ function render:drawRaycaster(level_object, player_object)
 		distance = ray.distance
 		shade = ray.shade
 		
-		-- self:drawRayWall(distance, player_object, level_object, ray_angle, level_texture, shade, rays, point_x, point_y)
-
 		self:drawRayWall(ray, player_object, level_object, ray_angle, rays)
 
 		self.findRayIntersections(ray, player_object, level_object, ray_angle, self.dof_value, level_object.ceilings)
@@ -221,8 +219,8 @@ function render:drawObjects(objects_table, player_object, level_object)
 			if self.depth[math.floor(x/self.quality) + 1] ~= nil and 
 			b > 10 and b < self.depth[math.floor(x/self.quality) + 1] and 
 			objects_table[index].state == 1 then
-				local objects_quad = love.graphics.newQuad(object_texture_x - 0.5, 0, 1, 16, objects_image_convert)
-				love.graphics.draw(objects_image_convert, objects_quad, math.floor(self.x + x), math.floor(self.y + object_y) - scale, 0, 1, scale / object_size)
+				local objects_quad = love.graphics.newQuad(object_texture_x - 0.5, 0, 1, 16, objects_table[index].texture)
+				love.graphics.draw(objects_table[index].texture, objects_quad, math.floor(self.x + x), math.floor(self.y + object_y) - scale, 0, 1, scale / object_size)
 			end	
 			object_texture_x = object_texture_x + ((object_size)/ scale)
 		end

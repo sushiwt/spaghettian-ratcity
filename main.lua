@@ -35,10 +35,8 @@ hud_visible = false
 -- Map Textures
 textures_image = love.image.newImageData("graphics/defaulttexture.png")
 sky_image = love.image.newImageData("graphics/defaultsky.png")
-objects_image = love.image.newImageData("graphics/smiley.png")
 
 textures_image_convert = love.graphics.newImage(textures_image)
-objects_image_convert = love.graphics.newImage(objects_image)
 
 -- UI Textures
 shooter_image = love.graphics.newImage("graphics/lasershooter.png")
@@ -79,7 +77,6 @@ render_floor = true
 -- Love2D Functions
 function love.load(dt) 
 	textures_image_convert:setFilter("nearest", "nearest")
-	objects_image_convert:setFilter("nearest", "nearest")
     shooter_image:setFilter("nearest", "nearest")
     healthbar_image:setFilter("nearest", "nearest")
     background_image:setFilter("nearest", "nearest")
@@ -252,9 +249,9 @@ function initializeGame()
 		love.mouse.setVisible(false) 
 	end
 	
-	objects[1] = object_meow.createObject("enemy", 1, 0, level_meow.cell_size * 3.5, level_meow.cell_size * 2, 8)
-	objects[2] = object_meow.createObject("pickup", 1, 1, level_meow.cell_size * 4.5, level_meow.cell_size * 2, 8)
-	objects[3] = object_meow.createObject("pickup", 1, 0, level_meow.cell_size * 5.5, level_meow.cell_size * 2, 8)
+	objects[1] = object_meow.createObject("enemy", 1, "smiley_single", level_meow.cell_size * 3.5, level_meow.cell_size * 2, 8)
+	objects[2] = object_meow.createObject("pickup", 1, "spaghetti", level_meow.cell_size * 4.5, level_meow.cell_size * 2, 8)
+	objects[3] = object_meow.createObject("pickup", 1, "metal_ball", level_meow.cell_size * 5.5, level_meow.cell_size * 2, 10)
 	
 	-- Load level if levels are available
 	if love.filesystem.getInfo("levels/" .. level .. ".srl") then

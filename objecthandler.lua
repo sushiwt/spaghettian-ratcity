@@ -2,10 +2,13 @@ local objecthandler = {}
 
 -- Object Functions
 function objecthandler.createObject(iType, iState, iTexture, ix, iy, iz) 
+	local texture_object = love.graphics.newImage("graphics/" .. iTexture .. ".png")
+	texture_object:setFilter("nearest", "nearest")
+
 	return {
 		type = iType,
 		state = iState,
-		texture = iTexture,
+		texture = texture_object,
 		x = ix,
 		y = iy,
 		z = iz,
