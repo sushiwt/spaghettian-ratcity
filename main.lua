@@ -1,4 +1,4 @@
--- Spaghettian Ratcity v0.1.6
+-- Spaghettian Ratcity v0.1.7
 
 -- Code written and documented by sushiwt 
 -- and based on the Raycaster tutorials by 3DSage :3
@@ -30,7 +30,7 @@ player_shoot = false
 ui_offset_x = 32
 ui_offset_y = 200
 
-hud_visible = true
+hud_visible = false
 
 -- Map Textures
 textures_image = love.image.newImageData("graphics/defaulttexture.png")
@@ -56,7 +56,7 @@ delta_time = 0
 objects = {}
 
 -- Level initialization. 
-level = "houe1"
+level = "meow"
 invalid_level = false
 
 -- Game States
@@ -167,20 +167,24 @@ function love.draw()
 
 			love.graphics.setLineWidth(1)
 			showFpsGraph(16,16,240, 128)
-		end
 
+			
+		end
+		
+		if invalid_level then
+			love.graphics.setColor(0,0,0,0.75)
+			love.graphics.rectangle("fill", 0, 0, 256, 100)
+			love.graphics.setColor(1,1,1)
+			love.graphics.setNewFont(10)
+			love.graphics.print("If you're seeing this, the program tried \nto load a level that doesnt exist, " .. level .. ".srl,\nand it failed. \n\nCheck the levels/ directory.", 0, 0)
+		end
+		
 		if level_topdown_toggle then
 			drawTopDownView()
 		end
 
 		print(debug_number)
 
-		if invalid_level then
-			love.graphics.setColor(0,0,0,0.75)
-			love.graphics.rectangle("fill", 0, 0, 256, 100)
-			love.graphics.setColor(1,1,1)
-			love.graphics.print("If you're seeing this, the program tried \nto load a level that doesnt exist, " .. level .. ".srl,\nand it failed. \n\nCheck the levels/ directory.", 0, 0)
-		end
 
 	elseif game_state == "options" then 
 		love.graphics.print("Options!!!! Change your Settinsg here!!!", menu_margin, menu_margin)

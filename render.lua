@@ -20,7 +20,7 @@ render.floor_quality = 4
 render.field_of_view = 75 -- The amount of area the player can see
 render.depth = {} -- Contains each rays distance value for object occlusion
 
-love.graphics.setScissor(render.x, render.y, render.width, render.height )
+love.graphics.setScissor(render.x, render.y, render.width, render.height)
 
 -- Light Coordinates (temporary)
 render.light_x = 96
@@ -480,7 +480,10 @@ function render:drawRayWall(ray, player_object, level_object, ray_angle, rays, l
 	local starting_segment = rays*self.quality
 	
 	-- Draws the depth of each ray for occlusion
-	self.depth[rays + 1] = wall_distance
+
+	if layer == 0 then
+		self.depth[rays + 1] = wall_distance
+	end
 
 	-- DRAW WALLS
 	-- Add way to change texture size later. 32x32 is the size of the textures
