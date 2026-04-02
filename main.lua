@@ -56,7 +56,7 @@ delta_time = 0
 objects = {}
 
 -- Level initialization. 
-level = "house1"
+level = "houe1"
 invalid_level = false
 
 -- Game States
@@ -72,6 +72,9 @@ fps_graph = {0,0}
 fps_point = 0
 
 player_average = 0
+
+-- Render settings
+render_floor = true
 
 -- Love2D Functions
 function love.load(dt) 

@@ -20,10 +20,6 @@ render.floor_quality = 4
 render.field_of_view = 75 -- The amount of area the player can see
 render.depth = {} -- Contains each rays distance value for object occlusion
 
-render.wall_layer = {}
-render.floor_layer = {}
-render.ceiling_layer = {}
-
 love.graphics.setScissor(render.x, render.y, render.width, render.height )
 
 -- Light Coordinates (temporary)
@@ -45,6 +41,26 @@ function render:drawRaycaster(level_object, player_object)
 
 	local ray = self.createRay()
 
+	-- Lighting 
+	-- Flashlight Mechanic?
+	-- if (math.floor(ray_count / 2) == rays) then
+	-- 	self.lights[1][1] = point_x - 16
+	-- 	self.lights[1][2]= point_y - 16
+	-- end
+	
+	if love.keyboard.isDown("y") then
+		self.lights[1][1] = self.lights[1][1] + 0.001
+	end
+	if love.keyboard.isDown("h") then
+		self.lights[1][1] = self.lights[1][1] - 0.001
+	end
+	if love.keyboard.isDown("g") then
+		self.lights[1][2] = self.lights[1][2] + 0.001
+	end
+	if love.keyboard.isDown("j") then
+		self.lights[1][2] = self.lights[1][2] - 0.001
+	end
+
 	-- Ray initialization + 3d Drawing
 	for rays = 0, ray_count do 
 		local point_x, point_y, depth_of_field
@@ -60,171 +76,92 @@ function render:drawRaycaster(level_object, player_object)
 		level_texture = ray.texture
 		distance = ray.distance
 		shade = ray.shade
+		
+		-- self:drawRayWall(distance, player_object, level_object, ray_angle, level_texture, shade, rays, point_x, point_y)
 
-		-- Fixes fisheye
-		local cosine_angle = self.fixRadians(player_object.angle - ray_angle)
-		distance = distance * math.cos(cosine_angle)
-		
-		-- 3D WALL DRAWINGS
-		local line_height = (level_object.wall_height * self.height)/distance
-		
-		-- The numerator takes care of the line segment somethng important
-		local texture_y_step = 32 / line_height 
-		local texture_y_offset = 0
-	
-		if line_height > self.height then
-			texture_y_offset = (line_height - self.height) / 2.0
-			line_height = self.height
-		end
-	
-		local line_offset = (self.center_height)-line_height/2
-		
-		if line_height > self.height then
-			line_height = self.height
-		end
-		
-		love.graphics.setLineWidth(self.quality)
-		local starting_segment = rays*self.quality
-		
-		-- Draws the depth of each ray
-		self.depth[rays + 1] = distance
+		self:drawRayWall(ray, player_object, level_object, ray_angle, rays)
 
-		-- Lighting 
-		-- Flashlight Mechanic?
-		-- if (math.floor(ray_count / 2) == rays) then
-		-- 	self.lights[1][1] = point_x - 16
-		-- 	self.lights[1][2]= point_y - 16
-		-- end
-		
-		if love.keyboard.isDown("y") then
-			self.lights[1][1] = self.lights[1][1] + 0.001
-		end
-		if love.keyboard.isDown("h") then
-			self.lights[1][1] = self.lights[1][1] - 0.001
-		end
-		if love.keyboard.isDown("g") then
-			self.lights[1][2] = self.lights[1][2] + 0.001
-		end
-		if love.keyboard.isDown("j") then
-			self.lights[1][2] = self.lights[1][2] - 0.001
-		end
+		self.findRayIntersections(ray, player_object, level_object, ray_angle, self.dof_value, level_object.ceilings)
 
-		-- DRAW WALLS
-		-- Add way to change texture size later. 32x32 is the size of the textures
-		local texture_y = texture_y_offset * texture_y_step + (level_texture * 32)
-		local texture_x = 0
-		
-		if shade == 1 then
-			texture_x = math.floor(point_x / (level_object.cell_size / 32 )) % 32
-			-- Flips the texture at the south
-			if ray_angle < pi then texture_x = 31 - texture_x end
-		else 
-			texture_x = math.floor(point_y / (level_object.cell_size / 32 )) % 32
-			-- Flips the texture at the south
-			if ray_angle > pi/2 and ray_angle < (3*pi)/2 then texture_x = 31 - texture_x end
-		end
-		
-		-- Resets the color before generating the strips
-		love.graphics.setColor(1,1,1,1)
-		
-		-- A list of points to draw the wall strips.
-		local wall_strip = {}
+		self:drawRayWall(ray, player_object, level_object, ray_angle, rays, 1)
 
-		-- A list of points to draw the floor and ceiling strips
-		local floor_strip = {}
-		local ceiling_strip = {}
-		
-		local fog_walls = 0
-		if self.fog > 0 then
-			fog_walls = math.min(1 - ((distance / 220) - (0.1 * self.fog)), 1)
-			if fog_walls < 0 then
-				fog_walls = 0
-			end
-		else 
-			fog_walls = 1
-		end
-
-		local unfixed_distance = (level_object.wall_height * self.height)/distance
- 
-		-- Wall Lighting
-		-- if (math.floor(point_x / 32) == 1 and math.floor(point_y / 32) == 1)then
-		-- 	shade = 10
-		-- end
-		local wall_shade = 0
-
-		wall_shade = self.calculateLighting(self.lights, point_x - level_object.cell_size / 2, point_y - level_object.cell_size / 2, level_object.cell_size, 1) - (1 - shade)
-		wall_shade = wall_shade * fog_walls
-
-		local wall_quad = love.graphics.newQuad(math.floor(texture_x), level_texture * 32, 1, 32, textures_image_convert)
-		-- Completely different wall rendering engine btw
-		love.graphics.setColor(wall_shade, wall_shade, wall_shade,1)
-		love.graphics.draw(textures_image_convert, wall_quad, starting_segment, line_offset - texture_y_offset, 0, 1, unfixed_distance/32)
-		love.graphics.setColor(1,1,1,1)
-		
 		-- DRAW FLOORS
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
 		-- spaced out from the walls.
+		
+		-- A list of points to draw the floor and ceiling strips
+		local floor_strip = {}
+		local ceiling_strip = {}
+
 		local fisheye_floor_fix = math.cos(self.fixRadians(player_object.angle - ray_angle))
 		local floor_ceiling_offset = (1.25 + ((0.006)*(self.height) - 1.2))*(level_object.wall_height*2.5) - 1 
 		local floor_shade = 0.9
+
+		local floor_cosine_angle = self.fixRadians(player_object.angle - ray_angle)
+		local floor_distance = distance * math.cos(floor_cosine_angle)
+		local floor_draw_height = (level_object.wall_height * self.height) / floor_distance
+		local floor_draw_offset = (self.center_height) - floor_draw_height / 2
+		local floor_starting_segment = rays*self.quality
+
+		local floor_offset = floor_draw_offset + floor_draw_height
 		
 		local floor_strip_index = 0
 		local ceiling_strip_index = 0
 		
-		
-		
-		love.graphics.setPointSize(self.floor_quality)
-		if rays % self.floor_quality == 0 then
-			for line_y = line_offset + line_height - 2, self.height, self.floor_quality do
-				local ground_y = line_y - (self.height/2)
-				local r, g, b, a = 0, 0, 0, 1
-				local ground_texture_x = (player_object.x + math.cos(ray_angle) * (floor_ceiling_offset) * 32 / ground_y / fisheye_floor_fix) 
-				local ground_texture_y = (player_object.y + math.sin(ray_angle) * (floor_ceiling_offset) * 32 / ground_y / fisheye_floor_fix) 
-				
-				local tile_light = 0
+		if render_floor then
+			love.graphics.setPointSize(self.floor_quality)
+			if rays % self.floor_quality == 0 then
+				for line_y = floor_offset - 2, self.height, self.floor_quality do
+					local ground_y = line_y - (self.height/2)
+					local r, g, b, a = 0, 0, 0, 1
+					local ground_texture_x = (player_object.x + math.cos(ray_angle) * (floor_ceiling_offset) * 32 / ground_y / fisheye_floor_fix) 
+					local ground_texture_y = (player_object.y + math.sin(ray_angle) * (floor_ceiling_offset) * 32 / ground_y / fisheye_floor_fix) 
+					
+					local tile_light = 0
 
-				tile_light = self.calculateLighting(self.lights, ground_texture_x - level_object.cell_size / 2, ground_texture_y - level_object.cell_size / 2, level_object.cell_size, 1, level_object)
+					tile_light = self.calculateLighting(self.lights, ground_texture_x - level_object.cell_size / 2, ground_texture_y - level_object.cell_size / 2, level_object.cell_size, 1, level_object)
 
-				-- Failsafe just in case it goes out of bounds
-				if ground_texture_x < 0 then ground_texture_x = ground_texture_x % level_object.cell_size  end
-				if ground_texture_y < 0 then ground_texture_y = ground_texture_y % level_object.cell_size end
-				if ground_texture_x / level_object.cell_size > level_object.columns then ground_texture_x = ground_texture_x % level_object.cell_size end
-				if ground_texture_y / level_object.cell_size > level_object.rows then ground_texture_y = ground_texture_y % level_object.cell_size end
-				
-				local mp = level_object.floors[1 + math.floor(ground_texture_y / level_object.cell_size)][1 + math.floor(ground_texture_x / level_object.cell_size)]*32 -- The multiplier shifts the textures to account for the multiple textures
-				if mp ~= nil then r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)end
-				
-				-- if (math.floor(ground_texture_x / 32) == 2 and math.floor(ground_texture_y / 32) == 2 ) then
-				-- 	tile_light = 0.1
-				-- end
+					-- Failsafe just in case it goes out of bounds
+					if ground_texture_x < 0 then ground_texture_x = ground_texture_x % level_object.cell_size  end
+					if ground_texture_y < 0 then ground_texture_y = ground_texture_y % level_object.cell_size end
+					if ground_texture_x / level_object.cell_size > level_object.columns then ground_texture_x = ground_texture_x % level_object.cell_size end
+					if ground_texture_y / level_object.cell_size > level_object.rows then ground_texture_y = ground_texture_y % level_object.cell_size end
+					
+					local mp = level_object.floors[1 + math.floor(ground_texture_y / level_object.cell_size)][1 + math.floor(ground_texture_x / level_object.cell_size)]*32 -- The multiplier shifts the textures to account for the multiple textures
+					if mp ~= nil then r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)end
+					
+					-- if (math.floor(ground_texture_x / 32) == 2 and math.floor(ground_texture_y / 32) == 2 ) then
+					-- 	tile_light = 0.1
+					-- end
 
-				if self.fog ~= 0 then
-					floor_shade = math.min((line_y - self.center_height) * (self.fog * 2) / self.height, 1)
-				else
-					floor_shade = 0.9
+					if self.fog ~= 0 then
+						floor_shade = math.min((line_y - self.center_height) * (self.fog * 2) / self.height, 1)
+					else
+						floor_shade = 0.9
+					end
+
+					floor_shade = floor_shade * tile_light + 0
+					
+					floor_strip[floor_strip_index] = {self.x + floor_starting_segment,  self.y + line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
+					floor_strip_index = floor_strip_index + 1
+					
+					mp = level_object.ceilings[1 + math.floor(ground_texture_y / level_object.cell_size)][1 + math.floor(ground_texture_x / level_object.cell_size)]*32
+					
+					if mp ~= nil and mp > 0 then
+						r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)
+						ceiling_strip[ceiling_strip_index] = {self.x + floor_starting_segment, self.y + (self.height) - line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
+						ceiling_strip_index = ceiling_strip_index + 1
+
+						love.graphics.setColor(1,1,1,1)
+					end
+					
 				end
-
-				floor_shade = floor_shade * tile_light + 0
-				
-				floor_strip[floor_strip_index] = {self.x + starting_segment,  self.y + line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
-				floor_strip_index = floor_strip_index + 1
-				
-				mp = level_object.ceilings[1 + math.floor(ground_texture_y / level_object.cell_size)][1 + math.floor(ground_texture_x / level_object.cell_size)]*32
-				
-				if mp ~= nil and mp > 0 then
-					r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)
-					ceiling_strip[ceiling_strip_index] = {self.x + starting_segment, self.y + (self.height) - line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
-					ceiling_strip_index = ceiling_strip_index + 1
-
-					love.graphics.setColor(1,1,1,1)
-				end
-				
 			end
-		end
 
-		-- Draws the level layer by layer
-		love.graphics.points(floor_strip)
-		love.graphics.points(ceiling_strip)
+			-- Draws the level layer by layer
+			love.graphics.points(floor_strip)
+			love.graphics.points(ceiling_strip)
+		end
 		
 		-- Recalculates the ray angle for another added ray to span the field of view.
 		ray_angle = self.fixRadians(ray_angle + ((pi / 180) * (self.field_of_view / ray_count)))
@@ -324,7 +261,9 @@ function render.calculateLighting(light_coords, subject_x, subject_y, cell_size,
 	return light_result
 end
 
-function render.findRayIntersections(ray, player_object, level_object, ray_angle, dof)
+function render.findRayIntersections(ray, player_object, level_object, ray_angle, dof, wall_layer)
+	wall_layer = wall_layer or level_object.walls
+
 	local ray_distance = 0
 	
 	-- vertical and horizontal level texture number
@@ -389,10 +328,10 @@ function render.findRayIntersections(ray, player_object, level_object, ray_angle
 				cell_y = cell_y + 1
 			end
 			
-			hor_level_texture = level_object.walls[cell_y][cell_x + 1] - 1
+			hor_level_texture = wall_layer[cell_y][cell_x + 1] - 1
 			
 			-- Checks if ray is intersecting wall
-			if level_object.walls[cell_y][cell_x + 1] > 0 then
+			if wall_layer[cell_y][cell_x + 1] > 0 then
 				horizontal_point_x = intersect_point_x
 				horizontal_point_y = intersect_point_y
 				horizontal_distance = math.sqrt(math.pow(horizontal_point_y - player_object.y, 2) + math.pow(horizontal_point_x - player_object.x, 2))
@@ -462,10 +401,10 @@ function render.findRayIntersections(ray, player_object, level_object, ray_angle
 				cell_x = cell_x + 1
 			end
 			
-			ver_level_texture = level_object.walls[cell_y + 1][cell_x] - 1
+			ver_level_texture = wall_layer[cell_y + 1][cell_x] - 1
 			
 			-- Checks if ray is intersecting wall
-			if level_object.walls[cell_y + 1][cell_x] > 0 then
+			if wall_layer[cell_y + 1][cell_x] > 0 then
 				vertical_point_x = intersect_point_x
 				vertical_point_y = intersect_point_y
 				vertical_distance = math.sqrt(math.pow(vertical_point_y - player_object.y, 2) + math.pow(vertical_point_x - player_object.x, 2))
@@ -514,6 +453,78 @@ function render.findRayIntersections(ray, player_object, level_object, ray_angle
 	ray.texture = level_texture_ray
 	ray.distance = ray_distance
 	ray.shade = ray_shade
+end
+
+function render:drawRayWall(ray, player_object, level_object, ray_angle, rays, layer)
+	layer = layer or 0
+
+	-- Fixes fisheye
+	local cosine_angle = self.fixRadians(player_object.angle - ray_angle)
+	local wall_distance = ray.distance * math.cos(cosine_angle)
+	
+	-- DRAW WALLS
+	local wall_draw_height = (level_object.wall_height * self.height)/wall_distance
+	
+	-- The numerator takes care of the line segment somethng important
+	local texture_y_step = 32 / wall_draw_height 
+	local texture_y_offset = 0
+
+	if wall_draw_height > self.height then
+		texture_y_offset = (wall_draw_height - self.height) / 2.0
+		wall_draw_height = self.height
+	end
+
+	local wall_draw_offset = (self.center_height)-wall_draw_height/2
+	
+	love.graphics.setLineWidth(self.quality)
+	local starting_segment = rays*self.quality
+	
+	-- Draws the depth of each ray for occlusion
+	self.depth[rays + 1] = wall_distance
+
+	-- DRAW WALLS
+	-- Add way to change texture size later. 32x32 is the size of the textures
+	local texture_x = 0
+	
+	if ray.shade == 1 then
+		texture_x = math.floor(ray.x / (level_object.cell_size / 32 )) % 32
+		-- Flips the texture at the south
+		if ray_angle < pi then texture_x = 31 - texture_x end
+	else 
+		texture_x = math.floor(ray.y / (level_object.cell_size / 32 )) % 32
+		-- Flips the texture at the south
+		if ray_angle > pi/2 and ray_angle < (3*pi)/2 then texture_x = 31 - texture_x end
+	end
+	
+	-- Resets the color before generating the strips
+	love.graphics.setColor(1,1,1,1)
+	
+	-- A list of points to draw the wall strips.
+	local wall_strip = {}
+	
+	local fog_walls = 0
+	if self.fog > 0 then
+		fog_walls = math.min(1 - ((wall_distance / 220) - (0.1 * self.fog)), 1)
+		if fog_walls < 0 then
+			fog_walls = 0
+		end
+	else 
+		fog_walls = 1
+	end
+
+	local unfixed_distance = (level_object.wall_height * self.height)/wall_distance
+
+	-- Wall Lighting
+	local wall_shade = 0
+
+	wall_shade = self.calculateLighting(self.lights, ray.x - level_object.cell_size / 2, ray.y - level_object.cell_size / 2, level_object.cell_size, 1) - (1 - ray.shade)
+	wall_shade = wall_shade * fog_walls
+
+	local wall_quad = love.graphics.newQuad(math.floor(texture_x), ray.texture * 32, 1, 32, textures_image_convert)
+	-- Completely different wall rendering engine btw
+	love.graphics.setColor(wall_shade, wall_shade, wall_shade,1)
+	love.graphics.draw(textures_image_convert, wall_quad, starting_segment, wall_draw_offset - texture_y_offset - (unfixed_distance * layer), 0, 1, unfixed_distance/32)
+	love.graphics.setColor(1,1,1,1)
 end
 
 function render.createRay()  
