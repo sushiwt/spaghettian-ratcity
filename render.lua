@@ -39,7 +39,7 @@ function render:drawRaycaster(level_object, player_object)
 	-- to calculate the direction a single ray points to
 	local ray_angle = self.fixRadians(player_object.angle - (((pi / 180) * (self.field_of_view / ray_count)) * starting_degree_offset))
 
-	local ray = self.createRay()
+	local ray = self.createRay(ray_angle, player_object.x, player_object.y)
 
 	-- Lighting 
 	-- Flashlight Mechanic?
@@ -65,23 +65,23 @@ function render:drawRaycaster(level_object, player_object)
 	for rays = 0, ray_count do 
 		local point_x, point_y, depth_of_field
 		
-		self.findRayIntersections(ray, player_object, level_object, ray_angle, self.dof_value)
+		self.findRayIntersections(ray, level_object, self.dof_value)
 
 		local level_texture = 0
 		local distance = 0
 		local shade = 0
 
-		point_x = ray.x
-		point_y = ray.y
+		point_x = ray.intersection_x
+		point_y = ray.intersection_y
 		level_texture = ray.texture
 		distance = ray.distance
 		shade = ray.shade
 		
-		self:drawRayWall(ray, player_object, level_object, ray_angle, rays)
+		self:drawRayWall(ray, player_object.angle, level_object, rays)
 
-		self.findRayIntersections(ray, player_object, level_object, ray_angle, self.dof_value, level_object.ceilings)
+		self.findRayIntersections(ray, level_object, self.dof_value, level_object.ceilings)
 
-		self:drawRayWall(ray, player_object, level_object, ray_angle, rays, 1)
+		self:drawRayWall(ray, player_object.angle, level_object, rays, 1)
 
 		-- DRAW FLOORS
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
@@ -163,6 +163,8 @@ function render:drawRaycaster(level_object, player_object)
 		
 		-- Recalculates the ray angle for another added ray to span the field of view.
 		ray_angle = self.fixRadians(ray_angle + ((pi / 180) * (self.field_of_view / ray_count)))
+	
+		ray.angle = ray_angle
 	end
 end
 
@@ -224,9 +226,6 @@ function render:drawObjects(objects_table, player_object, level_object)
 			end	
 			object_texture_x = object_texture_x + ((object_size)/ scale)
 		end
-
-		
-
 	end
 
 	
@@ -259,7 +258,7 @@ function render.calculateLighting(light_coords, subject_x, subject_y, cell_size,
 	return light_result
 end
 
-function render.findRayIntersections(ray, player_object, level_object, ray_angle, dof, wall_layer)
+function render.findRayIntersections(ray, level_object, dof, wall_layer)
 	wall_layer = wall_layer or level_object.walls
 
 	local ray_distance = 0
@@ -281,35 +280,35 @@ function render.findRayIntersections(ray, player_object, level_object, ray_angle
 	local intersect_point_x, intersect_point_y
 	local intersect_point_x_offset, intersect_point_y_offset
 
-	if ray_angle > pi then
+	if ray.angle > pi then
 		-- Calculates the horizontal line above the player needed to check the intersection
-		pointed_horizontal_line = (math.floor(player_object.y / level_object.cell_size) * level_object.cell_size)
+		pointed_horizontal_line = (math.floor(ray.y / level_object.cell_size) * level_object.cell_size)
 		
 		-- Finds the point of intersection of the horizontal line and the player ray
-		intersect_point_y = player_object.y - (player_object.y - pointed_horizontal_line)
-		intersect_point_x = (player_object.y - pointed_horizontal_line) * math.tan(ray_angle - (pi/2)) + player_object.x
+		intersect_point_y = ray.y - (ray.y - pointed_horizontal_line)
+		intersect_point_x = (ray.y - pointed_horizontal_line) * math.tan(ray.angle - (pi/2)) + ray.x
 		
 		-- Finds the point of intersection of the next horizontal line and the player ray
 		intersect_point_y_offset = -level_object.cell_size
-		intersect_point_x_offset = -intersect_point_y_offset * math.tan(ray_angle - (pi/2)) 
+		intersect_point_x_offset = -intersect_point_y_offset * math.tan(ray.angle - (pi/2)) 
 		
-	elseif ray_angle < pi then
+	elseif ray.angle < pi then
 		-- Utilizes the horizontal line below the player
-		pointed_horizontal_line = (math.floor(player_object.y / level_object.cell_size) * level_object.cell_size) + level_object.cell_size
+		pointed_horizontal_line = (math.floor(ray.y / level_object.cell_size) * level_object.cell_size) + level_object.cell_size
 		
 		-- Finds the point of intersection of the horizontal line and the player ray
-		intersect_point_y = player_object.y - (player_object.y - pointed_horizontal_line)
-		intersect_point_x = (player_object.y - pointed_horizontal_line) * math.tan(ray_angle - (pi/2)) + player_object.x
+		intersect_point_y = ray.y - (ray.y - pointed_horizontal_line)
+		intersect_point_x = (ray.y - pointed_horizontal_line) * math.tan(ray.angle - (pi/2)) + ray.x
 		
 		-- Finds the point of intersection of the next horizontal line and the player ray
 		intersect_point_y_offset = level_object.cell_size 
-		intersect_point_x_offset = -intersect_point_y_offset * math.tan(ray_angle - (pi/2)) 
+		intersect_point_x_offset = -intersect_point_y_offset * math.tan(ray.angle - (pi/2)) 
 		
-	elseif ray_angle == 0 or ray_angle == pi then
+	elseif ray.angle == 0 or ray.angle == pi then
 		-- The horizontal line and player ray would be parallel, 
 		-- so default the point to the player and refuse checking for intersections.
-		intersect_point_x = player_object.x
-		intersect_point_y = player_object.y
+		intersect_point_x = ray.x
+		intersect_point_y = ray.y
 		depth_of_field = dof
 	end
 	
@@ -322,7 +321,7 @@ function render.findRayIntersections(ray, player_object, level_object, ray_angle
 		-- Checks if the intersections are within the bounds
 		if cell_x < level_object.columns and cell_y < level_object.rows and cell_x > -1 and cell_y > 0 then
 			-- Shifts the array to account for the bottom of the grid.
-			if ray_angle < pi then
+			if ray.angle < pi then
 				cell_y = cell_y + 1
 			end
 			
@@ -332,7 +331,7 @@ function render.findRayIntersections(ray, player_object, level_object, ray_angle
 			if wall_layer[cell_y][cell_x + 1] > 0 then
 				horizontal_point_x = intersect_point_x
 				horizontal_point_y = intersect_point_y
-				horizontal_distance = math.sqrt(math.pow(horizontal_point_y - player_object.y, 2) + math.pow(horizontal_point_x - player_object.x, 2))
+				horizontal_distance = math.sqrt(math.pow(horizontal_point_y - ray.y, 2) + math.pow(horizontal_point_x - ray.x, 2))
 				break
 			end
 			
@@ -356,33 +355,33 @@ function render.findRayIntersections(ray, player_object, level_object, ray_angle
 	local vertical_point_x = 0
 	local vertical_point_y = 0
 	
-	if ray_angle > pi/2 and ray_angle < (3*pi)/2 then
+	if ray.angle > pi/2 and ray.angle < (3*pi)/2 then
 		-- Calculates the vertical line left of the player needed to check the intersection
-		pointed_vertical_line = (math.floor(player_object.x / level_object.cell_size) * level_object.cell_size)
+		pointed_vertical_line = (math.floor(ray.x / level_object.cell_size) * level_object.cell_size)
 		
 		-- Finds the point of intersection of the vertical line and the player ray
-		intersect_point_x = player_object.x - (player_object.x - pointed_vertical_line)
-		intersect_point_y = (player_object.x - pointed_vertical_line) * math.tan(-ray_angle) + player_object.y
+		intersect_point_x = ray.x - (ray.x - pointed_vertical_line)
+		intersect_point_y = (ray.x - pointed_vertical_line) * math.tan(-ray.angle) + ray.y
 		
 		-- Finds the point of intersection of the next line and the player ray
 		intersect_point_x_offset = -level_object.cell_size 
-		intersect_point_y_offset = -intersect_point_x_offset * math.tan(-ray_angle) 
-	elseif ray_angle < pi/2 or ray_angle > (3*pi)/2 then
+		intersect_point_y_offset = -intersect_point_x_offset * math.tan(-ray.angle) 
+	elseif ray.angle < pi/2 or ray.angle > (3*pi)/2 then
 		-- Calculates the vertical line right of the player needed to check the intersection
-		pointed_vertical_line = (math.floor(player_object.x / level_object.cell_size) * level_object.cell_size) + level_object.cell_size
+		pointed_vertical_line = (math.floor(ray.x / level_object.cell_size) * level_object.cell_size) + level_object.cell_size
 		
 		-- Finds the point of intersection of the vertical line and the player ray
-		intersect_point_x = player_object.x - (player_object.x - pointed_vertical_line)
-		intersect_point_y = (player_object.x - pointed_vertical_line) * math.tan(-ray_angle) + player_object.y
+		intersect_point_x = ray.x - (ray.x - pointed_vertical_line)
+		intersect_point_y = (ray.x - pointed_vertical_line) * math.tan(-ray.angle) + ray.y
 		
 		-- Finds the point of intersection of the next vertical line and the player ray
 		intersect_point_x_offset = level_object.cell_size 
-		intersect_point_y_offset = -intersect_point_x_offset * math.tan(-ray_angle) 
-	elseif ray_angle == pi/2 or ray_angle == (3*pi)/2 then 
+		intersect_point_y_offset = -intersect_point_x_offset * math.tan(-ray.angle) 
+	elseif ray.angle == pi/2 or ray.angle == (3*pi)/2 then 
 		-- The horizontal line and player ray would be parallel, 
 		-- so default the point to the player and refuse checking for intersections.
-		intersect_point_x = player_object.x
-		intersect_point_y = player_object.y
+		intersect_point_x = ray.x
+		intersect_point_y = ray.y
 		depth_of_field = dof
 	end
 	
@@ -395,7 +394,7 @@ function render.findRayIntersections(ray, player_object, level_object, ray_angle
 		-- Checks if the intersections are within the bounds
 		if cell_x < level_object.columns and cell_y < level_object.rows and cell_x > 0 and cell_y > -1 then
 			-- Shifts the array to account for the bottom of the grid.
-			if ray_angle < pi/2 or ray_angle > (3*pi)/2 then
+			if ray.angle < pi/2 or ray.angle > (3*pi)/2 then
 				cell_x = cell_x + 1
 			end
 			
@@ -405,7 +404,7 @@ function render.findRayIntersections(ray, player_object, level_object, ray_angle
 			if wall_layer[cell_y + 1][cell_x] > 0 then
 				vertical_point_x = intersect_point_x
 				vertical_point_y = intersect_point_y
-				vertical_distance = math.sqrt(math.pow(vertical_point_y - player_object.y, 2) + math.pow(vertical_point_x - player_object.x, 2))
+				vertical_distance = math.sqrt(math.pow(vertical_point_y - ray.y, 2) + math.pow(vertical_point_x - ray.x, 2))
 				break
 			end
 			
@@ -440,24 +439,24 @@ function render.findRayIntersections(ray, player_object, level_object, ray_angle
 		level_texture_ray = hor_level_texture
 		ray_distance = horizontal_distance
 	else 
-		intersect_point_x = player_object.x
-		intersect_point_y = player_object.y
+		intersect_point_x = ray.x
+		intersect_point_y = ray.y
 		level_texture_ray = 0
 		ray_distance = horizontal_distance
 	end
 
-	ray.x = intersect_point_x
-	ray.y = intersect_point_y
+	ray.intersection_x = intersect_point_x
+	ray.intersection_y = intersect_point_y
 	ray.texture = level_texture_ray
 	ray.distance = ray_distance
 	ray.shade = ray_shade
 end
 
-function render:drawRayWall(ray, player_object, level_object, ray_angle, rays, layer)
+function render:drawRayWall(ray, counter_angle, level_object, rays, layer)
 	layer = layer or 0
 
 	-- Fixes fisheye
-	local cosine_angle = self.fixRadians(player_object.angle - ray_angle)
+	local cosine_angle = self.fixRadians(counter_angle - ray.angle)
 	local wall_distance = ray.distance * math.cos(cosine_angle)
 	
 	-- DRAW WALLS
@@ -488,13 +487,13 @@ function render:drawRayWall(ray, player_object, level_object, ray_angle, rays, l
 	local texture_x = 0
 	
 	if ray.shade == 1 then
-		texture_x = math.floor(ray.x / (level_object.cell_size / 32 )) % 32
+		texture_x = math.floor(ray.intersection_x / (level_object.cell_size / 32 )) % 32
 		-- Flips the texture at the south
-		if ray_angle < pi then texture_x = 31 - texture_x end
+		if ray.angle < pi then texture_x = 31 - texture_x end
 	else 
-		texture_x = math.floor(ray.y / (level_object.cell_size / 32 )) % 32
+		texture_x = math.floor(ray.intersection_y / (level_object.cell_size / 32 )) % 32
 		-- Flips the texture at the south
-		if ray_angle > pi/2 and ray_angle < (3*pi)/2 then texture_x = 31 - texture_x end
+		if ray.angle > pi/2 and ray.angle < (3*pi)/2 then texture_x = 31 - texture_x end
 	end
 	
 	-- Resets the color before generating the strips
@@ -518,7 +517,7 @@ function render:drawRayWall(ray, player_object, level_object, ray_angle, rays, l
 	-- Wall Lighting
 	local wall_shade = 0
 
-	wall_shade = self.calculateLighting(self.lights, ray.x - level_object.cell_size / 2, ray.y - level_object.cell_size / 2, level_object.cell_size, 1) - (1 - ray.shade)
+	wall_shade = self.calculateLighting(self.lights, ray.intersection_x - level_object.cell_size / 2, ray.intersection_y - level_object.cell_size / 2, level_object.cell_size, 1) - (1 - ray.shade)
 	wall_shade = wall_shade * fog_walls
 
 	local wall_quad = love.graphics.newQuad(math.floor(texture_x), ray.texture * 32, 1, 32, textures_image_convert)
@@ -528,10 +527,13 @@ function render:drawRayWall(ray, player_object, level_object, ray_angle, rays, l
 	love.graphics.setColor(1,1,1,1)
 end
 
-function render.createRay()  
+function render.createRay(iAngle, iX, iY)  
 	return {
-		x = 0,
-		y = 0,
+		angle = iAngle,
+		x = iX,
+		y = iY,
+		intersection_x = 0,
+		intersection_y = 0,
 		texture = 0,
 		distance = 0,
 		shade = 0
