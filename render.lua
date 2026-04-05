@@ -65,7 +65,13 @@ function render:drawRaycaster(level_object, player_object)
 	for rays = 0, ray_count do 
 		local point_x, point_y, depth_of_field
 		
+		self.findRayIntersections(ray, level_object, self.dof_value, level_object.ceilings)
+
+		self:drawRayWall(ray, player_object.angle, level_object, rays, 1)
+
 		self.findRayIntersections(ray, level_object, self.dof_value)
+
+
 
 		local level_texture = 0
 		local distance = 0
@@ -79,9 +85,6 @@ function render:drawRaycaster(level_object, player_object)
 		
 		self:drawRayWall(ray, player_object.angle, level_object, rays)
 
-		self.findRayIntersections(ray, level_object, self.dof_value, level_object.ceilings)
-
-		self:drawRayWall(ray, player_object.angle, level_object, rays, 1)
 
 		-- DRAW FLOORS
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
@@ -161,6 +164,7 @@ function render:drawRaycaster(level_object, player_object)
 			love.graphics.points(ceiling_strip)
 		end
 		
+
 		-- Recalculates the ray angle for another added ray to span the field of view.
 		ray_angle = self.fixRadians(ray_angle + ((pi / 180) * (self.field_of_view / ray_count)))
 	
@@ -427,6 +431,8 @@ function render.findRayIntersections(ray, level_object, dof, wall_layer)
 	local ray_shade = 1
 	local level_texture_ray = 0;
 	
+
+
 	if vertical_distance < horizontal_distance then
 		intersect_point_x = vertical_point_x
 		intersect_point_y = vertical_point_y
@@ -444,6 +450,7 @@ function render.findRayIntersections(ray, level_object, dof, wall_layer)
 		level_texture_ray = 0
 		ray_distance = horizontal_distance
 	end
+
 
 	ray.intersection_x = intersect_point_x
 	ray.intersection_y = intersect_point_y

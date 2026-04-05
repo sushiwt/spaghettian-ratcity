@@ -54,7 +54,7 @@ delta_time = 0
 objects = {}
 
 -- Level initialization. 
-level = "meow"
+level = "house1"
 invalid_level = false
 
 -- Game States
