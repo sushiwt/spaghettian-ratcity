@@ -58,7 +58,7 @@ level = "house1"
 invalid_level = false
 
 -- Game States
-game_state = "menu"
+game_state = "game"
 
 -- Main Menus
 menu_option = 0
