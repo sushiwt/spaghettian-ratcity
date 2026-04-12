@@ -28,10 +28,10 @@ function menu:keypressed(key, scancode, isrepeat)
         self.menu_option = self.menu_option - 1
     elseif key == "z" or key == "return" then
         if self.menu_option == 0 then
-            game_state = "game"
+            game_state_updated = game_handler
             game_handler:initializeGame()
         elseif self.menu_option == 1 then
-            game_state = "options"
+            game_state_updated = options_handler
         elseif self.menu_option == 2 then
             love.event.quit()
         end

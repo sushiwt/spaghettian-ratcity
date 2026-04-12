@@ -18,7 +18,7 @@ function game:update(dt)
     
     -- Triggers
     if math.floor(self.player_meow.x / self.level_meow.cell_size) == 1 and math.floor(self.player_meow.y / self.level_meow.cell_size) == 5 then
-        game_state = "win"
+        game_state_updated = win_handler
     end
 end
 

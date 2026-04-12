@@ -27,13 +27,7 @@ crosshair_image = love.graphics.newImage("graphics/crosshair.png")
 background_image = love.graphics.newImage("graphics/menu_background.png")
 pelvis_image = love.graphics.newImage("graphics/pelvis.png")
 
-
-
--- "menu" variables
-
 -- Variables used everywhere
-game_state = "game"
-
 level = "house1"
 invalid_level = false
 
@@ -53,6 +47,7 @@ options_handler = require("gamestates.options")
 win_handler = require("gamestates.win")
 lose_handler = require("gamestates.lose")
 
+game_state_updated = game_handler
 
 -- Love2D Functions
 function love.load(dt) 
@@ -61,14 +56,12 @@ function love.load(dt)
     healthbar_image:setFilter("nearest", "nearest")
     background_image:setFilter("nearest", "nearest")
 
-	if game_state == "game" then
-		game_handler:initializeGame()
-	end
+	game_handler:initializeGame()
 end
 
 function love.update(dt)
-	if game_state == "game" then
-		game_handler:update(dt)
+	if type(game_state_updated.update) == "function" then
+		game_state_updated:update(dt)
 	end
 
 	fps = 1 / dt
@@ -77,58 +70,27 @@ end
 
 function love.draw()
 	love.graphics.setFont(myFont)
-
-	if game_state == "menu" then
-		menu_handler:draw()
-	elseif game_state == "game" then
-		game_handler:draw()
-	elseif game_state == "options" then 
-		options_handler:draw()
-	elseif game_state == "win" then
-		win_handler:draw()
-	elseif game_state == "lose" then
-		lose_handler:draw()
+	if type(game_state_updated.draw) == "function" then
+		game_state_updated:draw()
 	end
-	
 end
 
 function love.keypressed(key, scancode, isrepeat)
    	if key == "escape" then
 		love.mouse.setGrabbed(false)
 		love.mouse.setVisible(true)
-		game_state = "menu"
+		game_state_updated = menu_handler
   	end 
 
-	if game_state == "menu" then
-		menu_handler:keypressed(key, scancode, isrepeat)
-	elseif game_state == "game" then
-		game_handler:keypressed(key, scancode, isrepeat)
+	if type(game_state_updated.keypressed) == "function" then
+		game_state_updated:keypressed(key, scancode, isrepeat)
 	end
 end
 
 function love.mousepressed(x, y, button, istouch)
-	game_handler:mousepressed(x, y, button, istouch)
-
-end
-
--- "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\love\love.exe" --console "C:\Users\sushi\Documents\Projects\Spaghettian Ratcity\sr-love\spaghettian-ratcity"
--- Debugging purposes :3 the dump function.
--- Source - https://stackoverflow.com/a/27028488
--- Posted by hookenz, modified by community. See post 'Timeline' for change history
--- Retrieved 2026-02-25, License - CC BY-SA 4.0
-
--- Calculation Functions
-function dump(o)
-   if type(o) == 'table' then
-      local s = '{ '
-      for k,v in pairs(o) do
-         if type(k) ~= 'number' then k = '"'..k..'"' end
-         s = s .. dump(v) .. ','
-      end
-      return s .. '} '
-   else
-      return tostring(o)
-   end
+	if type(game_state_updated.mousepressed) == "function" then
+		game_state_updated:mousepressed(x, y, button, istouch)
+	end
 end
 
 -- For drawing the fps graph...
