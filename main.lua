@@ -1,4 +1,4 @@
--- Spaghettian Ratcity v0.1.7
+-- Spaghettian Ratcity v0.1.8
 
 -- Code written and documented by sushiwt 
 -- and based on the Raycaster tutorials by 3DSage :3
