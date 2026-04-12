@@ -560,6 +560,57 @@ function render.createRay(iAngle, iX, iY)
 	}
 end
 
+-- Display Functions
+function render:drawTopDownView(level_object, player_object) 
+	-- Draws the background of the level overlay
+	love.graphics.setColor(0,0,0, 0.75)
+	love.graphics.rectangle("fill", 0,0,self.width,self.height)
+
+	-- Draws the level
+	for row, row_value in pairs(level_object.walls) do
+		for column, column_value in ipairs(row_value) do
+			love.graphics.setColor(1,1,1, 0.8)
+			
+			row_left = row * level_object.cell_size - level_object.cell_size - player_object.y + (self.height / 2)
+			column_top = column * level_object.cell_size - level_object.cell_size - player_object.x + (self.width / 2)
+			row_right = row * level_object.cell_size - player_object.y + (self.height / 2)
+			column_bottom = column * level_object.cell_size - player_object.x + (self.width / 2)
+			
+			local vertices = {column_top, row_left, column_top, row_right, column_bottom, row_right, column_bottom, row_left}
+			
+			-- if column_value > 0 then
+			-- 	love.graphics.polygon("fill", vertices)
+			-- end
+
+			if (column_value ~= 0) then
+
+				
+				local textureQuad = love.graphics.newQuad(0,level_object.cell_size * (column_value - 1), level_object.cell_size, level_object.cell_size, textures_image_convert)
+				love.graphics.draw(textures_image_convert, textureQuad, column_top, row_left)
+			end
+
+		end
+	end
+	
+	-- Draws the player
+	love.graphics.setColor(255, 0, 0)
+	love.graphics.circle( "fill", self.width / 2, self.height / 2, 3)
+	
+	love.graphics.line(self.width / 2, self.height / 2, self.width / 2 + player_object.delta_x * 10, self.height / 2 + player_object.delta_y * 10)
+	
+	love.graphics.setColor(1,1,1)
+	love.graphics.draw(pelvis_image, self.width / 2, self.height / 2, player_object.angle - pi/2, 1, 1, 30, 30)
+
+	love.graphics.setPointSize(8)
+
+	-- Draws the objects
+	for index, object in ipairs(level_object.objects) do
+		if object.state ~= 0 then 
+		love.graphics.points(object.x - player_object.x + (self.width / 2), object.y - player_object.y + (self.height / 2))
+		end
+	end
+end
+
 function render:drawSky(player_object) 
 	for y = 0, 119 do
 		local sky_strip = {}

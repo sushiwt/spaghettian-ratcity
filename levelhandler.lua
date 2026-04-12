@@ -9,6 +9,7 @@ levelhandler.columns = 0
 levelhandler.wall_height = 30
 levelhandler.cell_size = 32
 
+levelhandler.objects = {}
 
 function levelhandler:loadLevel(level_name, render_object, player_object)
 	-- .srl is just a plain text file. Wanted to be unique with my level file types lol
