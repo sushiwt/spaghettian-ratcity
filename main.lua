@@ -21,21 +21,16 @@ local player_meow = require("player")
 local level_meow = require("levelhandler")
 local object_meow = require("objecthandler")
 
-level_topdown_toggle = false
-mouse_controls = true
+local level_topdown_toggle = false
 
--- Gun Settings
-player_shoot = false
+local ui_offset_x = 32
+local ui_offset_y = 200
 
-ui_offset_x = 32
-ui_offset_y = 200
-
-hud_visible = false
+local hud_visible = false
 
 -- Map Textures
 textures_image = love.image.newImageData("graphics/defaulttexture.png")
 sky_image = love.image.newImageData("graphics/defaultsky.png")
-
 textures_image_convert = love.graphics.newImage(textures_image)
 
 -- UI Textures
@@ -46,33 +41,26 @@ background_image = love.graphics.newImage("graphics/menu_background.png")
 pelvis_image = love.graphics.newImage("graphics/pelvis.png")
 
 -- Misc stuff
-debug_number = 0
-debug_number2 = 0
-fps = 0
-delta_time = 0
+local fps = 0
+local delta_time = 0
 
-objects = {}
+local objects = {}
 
 -- Level initialization. 
-level = "house1"
-invalid_level = false
+local level = "house1"
+local invalid_level = false
 
 -- Game States
-game_state = "game"
+local game_state = "game"
 
 -- Main Menus
-menu_option = 0
-ui_font_size = 32
-ui_line_height = 32
+local menu_option = 0
+local ui_font_size = 32
+local ui_line_height = 32
 
 -- For drawing the fps graph...
-fps_graph = {0,0}
-fps_point = 0
-
-player_average = 0
-
--- Render settings
-render_floor = true
+local fps_graph = {0,0}
+local fps_point = 0
 
 -- Love2D Functions
 function love.load(dt) 
@@ -98,20 +86,6 @@ function love.update(dt)
 		-- Triggers
 		if math.floor(player_meow.x / level_meow.cell_size) == 1 and math.floor(player_meow.y / level_meow.cell_size) == 5 then
 			game_state = "win"
-		end
-
-		if love.keyboard.isDown("o") then
-			debug_number = debug_number - 1
-		end
-		if love.keyboard.isDown("p") then
-			debug_number = debug_number + 1
-		end
-		
-		if love.keyboard.isDown("k") then
-			debug_number2 = debug_number2 - 1
-		end
-		if love.keyboard.isDown("l") then
-			debug_number2 = debug_number2 + 1
 		end
 	end
 
@@ -160,7 +134,7 @@ function love.draw()
 			love.graphics.print("HP: " .. player_meow.hp .. "/" .. player_meow.max_hp, ui_offset_x, ui_offset_y + ui_line_height)
 			love.graphics.print("Ammo: " .. player_meow.ammo .. "/" .. player_meow.inventory_ammo, ui_offset_x, ui_offset_y + ui_line_height * 2)
 			love.graphics.print("Position: " .. math.floor(player_meow.x) .. ", " .. math.floor(player_meow.y), ui_offset_x, ui_offset_y + ui_line_height * 3)
-			love.graphics.print("AverageDebug: " .. player_average, ui_offset_x, ui_offset_y + ui_line_height * 4)
+			love.graphics.print("AverageDebug: " .. player_meow.averaged_mouse, ui_offset_x, ui_offset_y + ui_line_height * 4)
 
 			love.graphics.setLineWidth(1)
 			showFpsGraph(16,16,240, 128)
@@ -179,9 +153,6 @@ function love.draw()
 		if level_topdown_toggle then
 			drawTopDownView()
 		end
-
-		print(debug_number)
-
 
 	elseif game_state == "options" then 
 		love.graphics.print("Options!!!! Change your Settinsg here!!!", menu_margin, menu_margin)
@@ -237,14 +208,14 @@ end
 
 function love.mousepressed(x, y, button, istouch)
    if button == 1 then -- Versions prior to 0.10.0 use the MouseConstant 'l'
-      player_shoot = true
+      player_meow.mouse_shoot = true
    end
 end
 
 function initializeGame()
 	player_meow.delta_x = math.cos(player_meow.angle) * player_meow.speed
 	player_meow.delta_y = math.sin(player_meow.angle) * player_meow.speed
-	if mouse_controls then
+	if player_meow.mouse_controls then
 		love.mouse.setGrabbed(true)
 		love.mouse.setVisible(false) 
 	end

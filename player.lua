@@ -14,11 +14,14 @@ player.speed_multiplier = 50
 player.max_hp = 100
 player.hp = 100
 
+-- Gun Settings
+player.mouse_shoot = false
 player.max_ammo = 30 -- The number of ammo you can shoot before needing to reload
 player.inventory_ammo = 120 --  The amount of ammo you have on your person
 player.ammo = 15 -- The ammo you use to shoot
 
 player.mouse_poll = {0,0}
+player.mouse_controls = true
 
 function averageTable(table)
 	local result = 0.0
@@ -56,13 +59,12 @@ function player:updateControls(dt, level_object)
 	
 	-- Mouse Turn
 	
-	if mouse_controls == true then
+	if self.mouse_controls == true then
 
 		table.insert(self.mouse_poll, love.mouse.getX() - 320)
 		table.remove(self.mouse_poll, 1)
 
 		local averaged_mouse = averageTable(self.mouse_poll)
-		player_average = averaged_mouse 
 
 		self.angle = self.angle + (averaged_mouse * 0.001) * (dt * self.speed_multiplier)
 		if self.angle < 0 then

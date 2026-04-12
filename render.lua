@@ -12,6 +12,9 @@ render.height = 360
 render.center_width = render.width / 2
 render.center_height = render.height / 2
 
+-- Render settings
+render.render_floor = true
+
 render.dof_value = 16
 render.fog = 0
 
@@ -109,7 +112,7 @@ function render:drawRaycaster(level_object, player_object)
 		local floor_strip_index = 0
 		local ceiling_strip_index = 0
 		
-		if render_floor then
+		if self.render_floor then
 			love.graphics.setPointSize(self.floor_quality)
 			if rays % self.floor_quality == 0 then
 				for line_y = floor_offset - 2, self.height, self.floor_quality do

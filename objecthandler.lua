@@ -68,10 +68,10 @@ function objecthandler.updateObject(objects_table, player_object, render_object)
 				end
 			end
 
-			if player_shoot and render_object.center_width > object_x - scale / 2 and render_object.center_width < object_x + scale / 2 and b < render_object.depth[math.floor(#render_object.depth / 2)]then
+			if player_object.mouse_shoot and render_object.center_width > object_x - scale / 2 and render_object.center_width < object_x + scale / 2 and b < render_object.depth[math.floor(#render_object.depth / 2)]then
 				objects_table[index].state = 0
 			end
-			player_shoot = false
+			player_object.mouse_shoot = false
 		end	
 		
 		local order_index = 1 --432432423

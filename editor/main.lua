@@ -4,8 +4,8 @@
 local walls = {}
 local floors = {}
 local ceilings = {}
-local rows = 8
-local columns = 8
+local rows = 20
+local columns = 20
 local wall_height = 30
 local cell_size = 32
 local level_fog = 0
@@ -42,7 +42,11 @@ function love.update()
         love.mouse.getY() < rows * editor_cell_size + editor_offset_y then
         walls[math.floor((love.mouse.getY() - editor_offset_y) / editor_cell_size) + 1][math.floor((love.mouse.getX() - editor_offset_x) / editor_cell_size) + 1] = chosen_texture
     end
-    if love.mouse.isDown(2) and math.floor(love.mouse.getY() / editor_cell_size) < rows and math.floor(love.mouse.getX() / editor_cell_size) < columns then
+     if love.mouse.isDown(2) and 
+        love.mouse.getX() > editor_offset_x and 
+        love.mouse.getY() > editor_offset_y and 
+        love.mouse.getX() < columns * editor_cell_size + editor_offset_x and 
+        love.mouse.getY() < rows * editor_cell_size + editor_offset_y then
         walls[math.floor((love.mouse.getY() - editor_offset_y) / editor_cell_size) + 1][math.floor((love.mouse.getX() - editor_offset_x) / editor_cell_size) + 1] = 0
     end
 
@@ -97,17 +101,16 @@ function love.draw()
     for row, row_value in ipairs(walls) do 
         for column, col_value in ipairs(row_value) do
             if col_value > 0 then
-                local texture_quad = love.graphics.newQuad(0, (col_value - 1) * 32, editor_cell_size, editor_cell_size, texture)
+                local texture_quad = love.graphics.newQuad(0, (col_value - 1) * 32, 32, 32, texture)
 
                 love.graphics.print(col_value,(column - 1) * editor_cell_size + editor_offset_x + 8, (row - 1) * editor_cell_size + editor_offset_y + 8)
-                love.graphics.draw(texture, texture_quad, (column - 1) * editor_cell_size + editor_offset_x, (row - 1) * editor_cell_size + editor_offset_y, 0)
+                love.graphics.draw(texture, texture_quad, (column - 1) * editor_cell_size + editor_offset_x, (row - 1) * editor_cell_size + editor_offset_y, 0, editor_cell_size / 32)
             end
         end
     end
 end
 
 function love.keypressed(key, scancode, isrepeat)
-
     if key == "up" then
         chosen_texture = chosen_texture + 1
     end
@@ -234,7 +237,6 @@ function loadLevel(level_name)
 		insert_row = true
 	end
 end
-
 
 function createLevelArray(wall_array) 
     local array_result = {}
