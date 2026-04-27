@@ -13,13 +13,18 @@ render.center_width = render.width / 2
 render.center_height = render.height / 2
 
 -- Render settings
-render.render_floor = true
+render.render_floor = false
+
+-- Default floor and ceiling colors
+render.floor_color = {1,0,0,1}
+render.ceiling_color = {0,1,1,1}
+
 
 render.dof_value = 16
 render.fog = 0
 
 render.quality = 1 -- Calculates how wide each segment of the screen would be for the rays
-render.floor_quality = 4
+render.floor_quality = 1
 render.field_of_view = 75 -- The amount of area the player can see
 render.depth = {} -- Contains each rays distance value for object occlusion
 
@@ -32,6 +37,8 @@ render.light_y = 32
 -- Light Coordinates 
 render.lights = {{32,32},{96,96 + 32}}
 render.view_bobbing = 0
+
+
 
 function render:drawRaycaster(level_object, player_object)
 	-- Calculates how many rays will be created based on the width of the window
@@ -51,6 +58,12 @@ function render:drawRaycaster(level_object, player_object)
 	-- 	self.lights[1][2]= point_y - 16
 	-- end
 	
+	love.graphics.setColor(self.floor_color)
+	love.graphics.rectangle("fill", 0, self.height/2, self.width, self.height)
+	
+	love.graphics.setColor(self.ceiling_color)
+	love.graphics.rectangle("fill", 0, 0, self.width, self.height/2)
+
 	if love.keyboard.isDown("y") then
 		self.lights[1][1] = self.lights[1][1] + 0.001
 	end
@@ -68,13 +81,11 @@ function render:drawRaycaster(level_object, player_object)
 	for rays = 0, ray_count do 
 		local point_x, point_y, depth_of_field
 		
-		self.findRayIntersections(ray, level_object, self.dof_value, level_object.ceilings)
+		self.findWallIntersections(ray, level_object, self.dof_value, level_object.ceilings)
 
 		self:drawRayWall(ray, player_object.angle, level_object, rays, 1)
 
-		self.findRayIntersections(ray, level_object, self.dof_value)
-
-
+		self.findWallIntersections(ray, level_object, self.dof_value)
 
 		local level_texture = 0
 		local distance = 0
@@ -87,7 +98,6 @@ function render:drawRaycaster(level_object, player_object)
 		shade = ray.shade
 		
 		self:drawRayWall(ray, player_object.angle, level_object, rays)
-
 
 		-- DRAW FLOORS
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
@@ -147,6 +157,7 @@ function render:drawRaycaster(level_object, player_object)
 					floor_shade = floor_shade * tile_light + 0
 					
 					floor_strip[floor_strip_index] = {self.x + floor_starting_segment,  self.y + line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
+					
 					floor_strip_index = floor_strip_index + 1
 					
 					mp = level_object.ceilings[1 + math.floor(ground_texture_y / level_object.cell_size)][1 + math.floor(ground_texture_x / level_object.cell_size)]*32
@@ -154,6 +165,7 @@ function render:drawRaycaster(level_object, player_object)
 					if mp ~= nil and mp > 0 then
 						r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)
 						ceiling_strip[ceiling_strip_index] = {self.x + floor_starting_segment, self.y + (self.height) - line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
+						
 						ceiling_strip_index = ceiling_strip_index + 1
 
 						love.graphics.setColor(1,1,1,1)
@@ -167,12 +179,11 @@ function render:drawRaycaster(level_object, player_object)
 			love.graphics.points(ceiling_strip)
 		end
 		
-		love.graphics.setLineWidth(1)
-		love.graphics.line(player_object.x, player_object.y, ray.intersection_x, ray.intersection_y)
+		-- love.graphics.setLineWidth(1)
+		-- love.graphics.line(player_object.x, player_object.y, ray.intersection_x, ray.intersection_y)
 
 		-- Recalculates the ray angle for another added ray to span the field of view.
 		ray_angle = self.fixRadians(ray_angle + ((pi / 180) * (self.field_of_view / ray_count)))
-	
 		ray.angle = ray_angle
 	end
 end
@@ -184,10 +195,10 @@ function render:drawObjects(objects_table, player_object, level_object)
 		local object_z = objects_table[index].z
 		
 		local CS = math.cos(player_object.angle)
-		local SS = -math.sin(player_object.angle)
+		local SS = math.sin(player_object.angle)
 		
-		local a = object_y * CS + object_x * SS
-		local b = object_x * CS - object_y * SS
+		local a = object_y * CS + object_x * -SS
+		local b = object_x * CS + object_y * SS
 		object_x = a
 		object_y = b
 		
@@ -267,7 +278,7 @@ function render.calculateLighting(light_coords, subject_x, subject_y, cell_size,
 	return light_result
 end
 
-function render.findRayIntersections(ray, level_object, dof, wall_layer)
+function render.findWallIntersections(ray, level_object, dof, wall_layer)
 	wall_layer = wall_layer or level_object.walls
 
 	local ray_distance = 0
@@ -288,6 +299,8 @@ function render.findRayIntersections(ray, level_object, dof, wall_layer)
 	
 	local intersect_point_x, intersect_point_y
 	local intersect_point_x_offset, intersect_point_y_offset
+
+	local horizontal_wall_type = 0
 
 	if ray.angle > pi then
 		-- Calculates the horizontal line above the player needed to check the intersection
@@ -335,21 +348,14 @@ function render.findRayIntersections(ray, level_object, dof, wall_layer)
 			end
 			
 			hor_level_texture = wall_layer[cell_y][cell_x + 1] - 1
-			
+
 			-- Checks if ray is intersecting wall
 			if wall_layer[cell_y][cell_x + 1] > 0 then
 				horizontal_point_x = intersect_point_x
 				horizontal_point_y = intersect_point_y
 				horizontal_distance = math.sqrt(math.pow(horizontal_point_y - ray.y, 2) + math.pow(horizontal_point_x - ray.x, 2))
-				
-				-- if wall_layer[cell_y][cell_x + 1] == 4 then 
-				-- 	horizontal_point_y = horizontal_point_y + 16
-				-- 	horizontal_distance = math.sqrt(math.pow(horizontal_point_y - ray.y, 2) + math.pow(horizontal_point_x - ray.x, 2))
-					
-				-- end
 				break
 			end
-			
 		end
 		
 		-- The code normally breaks before these lines of code execute
@@ -400,6 +406,7 @@ function render.findRayIntersections(ray, level_object, dof, wall_layer)
 		depth_of_field = dof
 	end
 	
+
 	-- Checks the intersections
 	while depth_of_field < dof do
 		-- Correlates the location the ray is currently intersecting with the array size.
@@ -416,7 +423,10 @@ function render.findRayIntersections(ray, level_object, dof, wall_layer)
 			ver_level_texture = wall_layer[cell_y + 1][cell_x] - 1
 			
 			-- Checks if ray is intersecting wall
-			if wall_layer[cell_y + 1][cell_x] > 0 then
+
+			local wall_type = wall_layer[cell_y + 1][cell_x]
+
+			if wall_type > 0 then
 				vertical_point_x = intersect_point_x
 				vertical_point_y = intersect_point_y
 				vertical_distance = math.sqrt(math.pow(vertical_point_y - ray.y, 2) + math.pow(vertical_point_x - ray.x, 2))
@@ -448,13 +458,14 @@ function render.findRayIntersections(ray, level_object, dof, wall_layer)
 		intersect_point_x = vertical_point_x
 		intersect_point_y = vertical_point_y
 		level_texture_ray = ver_level_texture
-		ray_distance = vertical_distance
+		ray_distance = math.sqrt(math.pow(intersect_point_y - ray.y, 2) + math.pow(intersect_point_x - ray.x, 2))
 		ray_shade = 0.9
 	elseif horizontal_distance < vertical_distance then
 		intersect_point_x = horizontal_point_x
 		intersect_point_y = horizontal_point_y
 		level_texture_ray = hor_level_texture
-		ray_distance = horizontal_distance
+		ray_distance = math.sqrt(math.pow(intersect_point_y - ray.y, 2) + math.pow(intersect_point_x - ray.x, 2))
+
 	else 
 		intersect_point_x = ray.x
 		intersect_point_y = ray.y

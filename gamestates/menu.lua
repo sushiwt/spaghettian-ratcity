@@ -1,6 +1,5 @@
 local menu = {}
 
-
 menu.menu_option = 0
 
 function menu:draw() 
