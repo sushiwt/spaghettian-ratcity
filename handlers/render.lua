@@ -13,18 +13,16 @@ render.center_width = render.width / 2
 render.center_height = render.height / 2
 
 -- Render settings
-render.render_floor = false
+render.render_floor = true
 
 -- Default floor and ceiling colors
-render.floor_color = {1,0,0,1}
-render.ceiling_color = {0,1,1,1}
 
 
 render.dof_value = 16
 render.fog = 0
 
 render.quality = 1 -- Calculates how wide each segment of the screen would be for the rays
-render.floor_quality = 1
+render.floor_quality = 2
 render.field_of_view = 75 -- The amount of area the player can see
 render.depth = {} -- Contains each rays distance value for object occlusion
 
@@ -38,7 +36,18 @@ render.light_y = 32
 render.lights = {{32,32},{96,96 + 32}}
 render.view_bobbing = 0
 
+render.floor_strip = {}
 
+render.emptyone = {}
+
+for i = 0, render.width * render.height do 
+	render.floor_strip[i] = {0,0,0,0,0,0}
+	render.emptyone[i] = {}
+end
+
+print("Mesh Initiated")
+
+render.floor_ceiling_mesh = love.graphics.newMesh({{"VertexPosition", "float", 2}, {"VertexColor", "float", 4}}, render.floor_strip, "points")
 
 function render:drawRaycaster(level_object, player_object)
 	-- Calculates how many rays will be created based on the width of the window
@@ -58,12 +67,6 @@ function render:drawRaycaster(level_object, player_object)
 	-- 	self.lights[1][2]= point_y - 16
 	-- end
 	
-	love.graphics.setColor(self.floor_color)
-	love.graphics.rectangle("fill", 0, self.height/2, self.width, self.height)
-	
-	love.graphics.setColor(self.ceiling_color)
-	love.graphics.rectangle("fill", 0, 0, self.width, self.height/2)
-
 	if love.keyboard.isDown("y") then
 		self.lights[1][1] = self.lights[1][1] + 0.001
 	end
@@ -76,6 +79,12 @@ function render:drawRaycaster(level_object, player_object)
 	if love.keyboard.isDown("j") then
 		self.lights[1][2] = self.lights[1][2] - 0.001
 	end
+
+	-- A list of points to draw the floor and ceiling strips
+	local floor_mesh_index = 0
+
+	self.floor_strip = {}
+	self.floor_ceiling_mesh:setVertices({})
 
 	-- Ray initialization + 3d Drawing
 	for rays = 0, ray_count do 
@@ -103,9 +112,6 @@ function render:drawRaycaster(level_object, player_object)
 		-- Fix ground spacing later... based on the resolution the bigger it is the more it's 
 		-- spaced out from the walls.
 		
-		-- A list of points to draw the floor and ceiling strips
-		local floor_strip = {}
-		local ceiling_strip = {}
 
 		local fisheye_floor_fix = math.cos(self.fixRadians(player_object.angle - ray_angle))
 		local floor_ceiling_offset = (1.25 + ((0.006)*(self.height) - 1.2))*(level_object.wall_height*2.5) - 1 
@@ -119,10 +125,10 @@ function render:drawRaycaster(level_object, player_object)
 
 		local floor_offset = floor_draw_offset + floor_draw_height
 		
-		local floor_strip_index = 0
 		local ceiling_strip_index = 0
 		
 		if self.render_floor then
+
 			love.graphics.setPointSize(self.floor_quality)
 			if rays % self.floor_quality == 0 then
 				for line_y = floor_offset - 2, self.height, self.floor_quality do
@@ -156,28 +162,24 @@ function render:drawRaycaster(level_object, player_object)
 
 					floor_shade = floor_shade * tile_light + 0
 					
-					floor_strip[floor_strip_index] = {self.x + floor_starting_segment,  self.y + line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
+					self.floor_strip[floor_mesh_index] = {self.x + floor_starting_segment,  self.y + line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
 					
-					floor_strip_index = floor_strip_index + 1
+					floor_mesh_index = floor_mesh_index + 1
 					
 					mp = level_object.ceilings[1 + math.floor(ground_texture_y / level_object.cell_size)][1 + math.floor(ground_texture_x / level_object.cell_size)]*32
 					
 					if mp ~= nil and mp > 0 then
 						r, g, b, a = textures_image:getPixel(math.floor(ground_texture_x % 32), math.floor(ground_texture_y % 32) + mp)
-						ceiling_strip[ceiling_strip_index] = {self.x + floor_starting_segment, self.y + (self.height) - line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
+						self.floor_strip[floor_mesh_index] = {self.x + floor_starting_segment, self.y + (self.height) - line_y, r * floor_shade, g * floor_shade, b * floor_shade, a}
 						
-						ceiling_strip_index = ceiling_strip_index + 1
+						floor_mesh_index = floor_mesh_index + 1
 
 						love.graphics.setColor(1,1,1,1)
 					end
-					
 				end
 			end
-
-			-- Draws the level layer by layer
-			love.graphics.points(floor_strip)
-			love.graphics.points(ceiling_strip)
 		end
+
 		
 		-- love.graphics.setLineWidth(1)
 		-- love.graphics.line(player_object.x, player_object.y, ray.intersection_x, ray.intersection_y)
@@ -186,6 +188,9 @@ function render:drawRaycaster(level_object, player_object)
 		ray_angle = self.fixRadians(ray_angle + ((pi / 180) * (self.field_of_view / ray_count)))
 		ray.angle = ray_angle
 	end
+
+	self.floor_ceiling_mesh:setVertices(self.floor_strip)
+	love.graphics.draw(self.floor_ceiling_mesh)
 end
 
 function render:drawObjects(objects_table, player_object, level_object) 
